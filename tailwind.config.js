@@ -8,10 +8,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#0066cc', // Startupsole.com mavi tonu
-        secondary: '#ffcc00', // Vurgulayıcı renk (sarı)
-        dark: '#333333', // Koyu renk tonu
-        light: '#f4f4f4', // Açık gri arkaplan
+        primary: '#0066cc',
+        secondary: '#ffcc00',
+        dark: '#333333',
+        light: '#f4f4f4',
       },
     },
   },
