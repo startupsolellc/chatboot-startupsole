@@ -1,8 +1,47 @@
-/* Varsayılan stil */
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f4f4f4;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Widget içindeki mesajlaşma stili */
+#chatboot-widget-container .chat-window {
+  padding: 10px;
+  overflow-y: auto;
+  height: 400px;
+}
+
+#chatboot-widget-container .message {
+  padding: 8px 10px;
+  margin: 5px 0;
+  border-radius: 5px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+#chatboot-widget-container .message.user {
+  background-color: #0066cc;
+  color: white;
+  align-self: flex-end;
+}
+
+#chatboot-widget-container .message.bot {
+  background-color: #f1f1f1;
+  color: #333;
+  align-self: flex-start;
+}
+
+#chatboot-widget-container input[type="text"] {
+  width: calc(100% - 60px);
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-right: 5px;
+}
+
+#chatboot-widget-container button {
+  border: none;
+  background-color: #0066cc;
+  color: white;
+  padding: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#chatboot-widget-container button:hover {
+  background-color: #004999;
 }
