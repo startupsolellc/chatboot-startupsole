@@ -81,7 +81,7 @@ exports.handler = async (event, context) => {
       headers: {
         "Content-Type": "application/json; charset=utf-8"
       },
-      body: JSON.stringify({ error: "Sunucu hatası, lütfen tekrar deneyin." }),
+      body: JSON.stringify({ error: `Sunucu hatası: ${error.message}` }),
     };
   }
 };
