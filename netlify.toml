@@ -4,4 +4,4 @@
 
 [functions]
   directory = "netlify/functions"
-  external_node_modules = ["firebase", "openai", "node-fetch"]
+  external_node_modules = ["firebase", "openai", "node-fetch", "rss-parser"]
