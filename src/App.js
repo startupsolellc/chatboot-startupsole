@@ -1,12 +1,11 @@
 // src/App.js
 
 import React from 'react';
-import ChatWidget from './components/ChatWidget';
 
 function App() {
   return (
     <div>
-      <ChatWidget />
+      <h1>Merhaba Chatboot! 🚀</h1>
     </div>
   );
 }
