@@ -42,8 +42,17 @@ exports.handler = async (event, context) => {
     const faqSnapshot = await getDocs(faqCollection);
     const blogSnapshot = await getDocs(blogCollection);
 
-    const faqs = faqSnapshot.docs.map((doc) => doc.data());
-    const blogArticles = blogSnapshot.docs.map((doc) => doc.data());
+    const faqs = faqSnapshot.docs.map((doc) => ({
+        question: doc.data().question,
+        answer: doc.data().answer
+    }));
+
+    // Blog yazılarında sadece başlık, özet ve link gönderelim (İçeriği Kısıtla)
+    const blogArticles = blogSnapshot.docs.map((doc) => ({
+        title: doc.data().title,
+        excerpt: doc.data().excerpt?.slice(0, 200), // Yalnızca 200 karaktere kadar al
+        link: doc.data().link
+    }));
 
     console.log("📂 Firebase'den Alınan SSS Verileri:", faqs); 
     console.log("📂 Firebase'den Alınan Blog Verileri:", blogArticles);
