@@ -11,3 +11,13 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Varsayılan stil */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+}
