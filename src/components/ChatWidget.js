@@ -1,10 +1,99 @@
 // src/components/ChatWidget.js
 
 import React, { useState } from 'react';
-import {
-  Box, Button, Input, Flex, Text, IconButton, useDisclosure
-} from '@chakra-ui/react';
+import styled from 'styled-components';
 import { Send, MessageCircle } from 'lucide-react';
+
+// Startupsole.com renkleri
+const primaryColor = '#0066cc';
+const secondaryColor = '#ffcc00';
+const darkColor = '#333333';
+const lightColor = '#f4f4f4';
+
+const ChatContainer = styled.div`
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+`;
+
+const ChatButton = styled.button`
+  background-color: ${primaryColor};
+  border: none;
+  border-radius: 50%;
+  padding: 10px;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    background-color: ${secondaryColor};
+  }
+`;
+
+const ChatBox = styled.div`
+  width: 300px;
+  height: 400px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const Header = styled.div`
+  background-color: ${primaryColor};
+  color: white;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const MessagesContainer = styled.div`
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  background-color: ${lightColor};
+`;
+
+const Message = styled.div`
+  background-color: ${({ isUser }) => (isUser ? primaryColor : '#e0e0e0')};
+  color: ${({ isUser }) => (isUser ? 'white' : darkColor)};
+  padding: 8px 12px;
+  border-radius: 10px;
+  margin-bottom: 5px;
+  max-width: 70%;
+  align-self: ${({ isUser }) => (isUser ? 'flex-end' : 'flex-start')};
+`;
+
+const InputContainer = styled.div`
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #ddd;
+`;
+
+const Input = styled.input`
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-right: 10px;
+`;
+
+const SendButton = styled.button`
+  background-color: ${primaryColor};
+  border: none;
+  border-radius: 5px;
+  padding: 8px 12px;
+  color: white;
+  cursor: pointer;
+
+  &:hover {
+    background-color: ${secondaryColor};
+  }
+`;
 
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,60 +142,43 @@ const ChatWidget = () => {
   };
 
   return (
-    <Box position="fixed" bottom="20px" right="20px" zIndex="1000">
-      {!isOpen ? (
-        <IconButton
-          icon={<MessageCircle />}
-          colorScheme="primary"
-          onClick={toggleChat}
-          size="lg"
-          isRound
-        />
-      ) : (
-        <Box bg="white" boxShadow="md" borderRadius="md" w="300px" h="400px" p="4">
-          <Flex justifyContent="space-between" alignItems="center" mb="4">
-            <Text fontSize="lg" fontWeight="bold" color="primary">
-              Chatboot
-            </Text>
-            <Button size="sm" onClick={toggleChat} colorScheme="red">
-              Kapat
-            </Button>
-          </Flex>
+    <ChatContainer>
+      {!isOpen && (
+        <ChatButton onClick={toggleChat}>
+          <MessageCircle size={24} />
+        </ChatButton>
+      )}
 
-          <Box flex="1" overflowY="auto" mb="4">
+      {isOpen && (
+        <ChatBox>
+          <Header>
+            Chatboot
+            <button onClick={toggleChat}>✖️</button>
+          </Header>
+
+          <MessagesContainer>
             {messages.map((msg, index) => (
-              <Box
-                key={index}
-                bg={msg.sender === 'user' ? 'primary' : 'gray.200'}
-                color={msg.sender === 'user' ? 'white' : 'black'}
-                p="2"
-                borderRadius="md"
-                mb="2"
-                maxW="80%"
-                alignSelf={msg.sender === 'user' ? 'flex-end' : 'flex-start'}
-              >
+              <Message key={index} isUser={msg.sender === 'user'}>
                 {msg.text}
-              </Box>
+              </Message>
             ))}
-          </Box>
+          </MessagesContainer>
 
-          <Flex>
+          <InputContainer>
             <Input
-              placeholder="Bir mesaj yaz..."
+              type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
-              mr="2"
+              placeholder="Bir mesaj yaz..."
             />
-            <IconButton
-              icon={<Send />}
-              colorScheme="primary"
-              onClick={handleSend}
-            />
-          </Flex>
-        </Box>
+            <SendButton onClick={handleSend}>
+              <Send size={20} />
+            </SendButton>
+          </InputContainer>
+        </ChatBox>
       )}
-    </Box>
+    </ChatContainer>
   );
 };
 
