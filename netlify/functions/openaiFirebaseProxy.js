@@ -78,3 +78,7 @@ exports.handler = async (event, context) => {
     };
   }
 };
+console.log("OpenAI'ye Gönderilen Mesajlar:", {
+  role: "system",
+  content: `SSS: ${JSON.stringify(faqs)} Blog: ${JSON.stringify(blogArticles)}`
+});
