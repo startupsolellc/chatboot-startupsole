@@ -4,9 +4,16 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-const root = ReactDOM.createRoot(document.getElementById('chatboot-widget'));
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+// 'chatboot-widget' div'inin var olup olmadığını kontrol et
+const widgetRoot = document.getElementById('chatboot-widget');
+
+if (widgetRoot) {
+  const root = ReactDOM.createRoot(widgetRoot);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+} else {
+  console.error('chatboot-widget elementi bulunamadı.');
+}
