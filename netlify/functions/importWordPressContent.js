@@ -2,7 +2,9 @@
 
 const { initializeApp } = require("firebase/app");
 const { getFirestore, collection, doc, setDoc } = require("firebase/firestore");
-const fetch = require("node-fetch"); // API istekleri için kullanacağız
+
+// Dynamic Import for ES Module Compatibility
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const firebaseConfig = {
     apiKey: process.env.FIREBASE_API_KEY,
