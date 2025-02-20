@@ -6,14 +6,12 @@ const {
     getFirestore, 
     collection, 
     getDocs 
-} = require("firebase/firestore/lite"); // 🔥 Firestore Lite kullanıyoruz!
+} = require("firebase/firestore/lite"); 
 
-// OpenAI API Bağlantısı
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Firebase Yapılandırması
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -26,7 +24,6 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
-// Netlify Function Handler
 exports.handler = async (event, context) => {
   try {
     let userMessage = "Merhaba, nasıl yardımcı olabilirim?";
@@ -35,6 +32,8 @@ exports.handler = async (event, context) => {
       const body = JSON.parse(event.body);
       userMessage = body.message || userMessage;
     }
+
+    console.log("📥 Kullanıcı Mesajı:", userMessage);
 
     // Firebase'den Hem SSS Hem de Blog Verilerini Çek
     const faqCollection = collection(db, "faqs"); 
@@ -46,39 +45,43 @@ exports.handler = async (event, context) => {
     const faqs = faqSnapshot.docs.map((doc) => doc.data());
     const blogArticles = blogSnapshot.docs.map((doc) => doc.data());
 
-    console.log("Firebase'den Alınan SSS Verileri:", faqs); 
-    console.log("Firebase'den Alınan Blog Verileri:", blogArticles);
+    console.log("📂 Firebase'den Alınan SSS Verileri:", faqs); 
+    console.log("📂 Firebase'den Alınan Blog Verileri:", blogArticles);
 
-    // OpenAI'den Yanıt Al
+    console.log("🚦 OpenAI'ye Gönderilen Mesajlar:", {
+        role: "system",
+        content: `SSS: ${JSON.stringify(faqs)} Blog: ${JSON.stringify(blogArticles)}`
+    });
+
+    // OpenAI'ye Sistem Mesajı ve Kullanıcı Mesajını Gönder
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { role: "user", content: userMessage },
-        { role: "system", content: `SSS: ${JSON.stringify(faqs)} Blog: ${JSON.stringify(blogArticles)}` },
+        { 
+          role: "system", 
+          content: `Lütfen sadece aşağıdaki verilere dayanarak cevap ver. Eğer uygun bilgi yoksa 'Bu konuda bilgim yok' de. SSS: ${JSON.stringify(faqs)} Blog: ${JSON.stringify(blogArticles)}` 
+        },
       ],
     });
 
-    console.log("OpenAI Yanıtı:", response);
+    console.log("🧠 OpenAI Yanıtı:", response);
 
     return {
       statusCode: 200,
       headers: {
-        "Content-Type": "application/json; charset=utf-8" // UTF-8 desteği eklendi!
+        "Content-Type": "application/json; charset=utf-8"
       },
       body: JSON.stringify({ message: response.choices[0].message.content }),
     };
   } catch (error) {
-    console.error("Hata Detayı:", error);
+    console.error("❌ Hata Detayı:", error.message, error.stack);
     return {
       statusCode: 500,
       headers: {
-        "Content-Type": "application/json; charset=utf-8" // Hata durumunda da UTF-8
+        "Content-Type": "application/json; charset=utf-8"
       },
       body: JSON.stringify({ error: "Sunucu hatası, lütfen tekrar deneyin." }),
     };
   }
 };
-console.log("OpenAI'ye Gönderilen Mesajlar:", {
-  role: "system",
-  content: `SSS: ${JSON.stringify(faqs)} Blog: ${JSON.stringify(blogArticles)}`
-});
