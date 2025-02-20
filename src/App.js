@@ -1,13 +1,6 @@
 // src/App.js
 
 import React, { useState } from 'react';
-import { OpenAI } from 'openai'; 
-
-// OpenAI API anahtarı ile güvenli yapılandırma
-const openai = new OpenAI({
-  apiKey: process.env.REACT_APP_OPENAI_API_KEY, // Netlify'dan alınan anahtar
-  dangerouslyAllowBrowser: false, // Güvenli kullanım (tarayıcıda gizli)
-});
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -23,19 +16,22 @@ function App() {
     setInput('');
 
     try {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: input }],
+      const response = await fetch('/.netlify/functions/openaiProxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input }),
       });
+
+      const data = await response.json();
 
       const botMessage = {
         sender: 'bot',
-        text: response.choices[0].message.content,
+        text: data.message || 'Maalesef şu anda yanıt veremiyorum.',
       };
 
       setMessages([...newMessages, botMessage]);
     } catch (error) {
-      console.error('OpenAI API Hatası:', error);
+      console.error('Sunucu Hatası:', error);
       const errorMessage = { sender: 'bot', text: 'Maalesef şu anda yanıt veremiyorum.' };
       setMessages([...newMessages, errorMessage]);
     }
