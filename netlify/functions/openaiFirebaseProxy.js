@@ -57,20 +57,15 @@ exports.handler = async (event, context) => {
     console.log("📂 Firebase'den Alınan SSS Verileri:", faqs); 
     console.log("📂 Firebase'den Alınan Blog Verileri:", blogArticles);
 
-    console.log("🚦 OpenAI'ye Gönderilen Mesajlar:", {
-        role: "system",
-        content: `SSS: ${JSON.stringify(faqs)} Blog: ${JSON.stringify(blogArticles)}`
-    });
-
     // OpenAI'ye Sistem Mesajı ve Kullanıcı Mesajını Gönder
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "user", content: userMessage },
         { 
           role: "system", 
-          content: `Lütfen sadece aşağıdaki verilere dayanarak cevap ver. Eğer uygun bilgi yoksa 'Bu konuda bilgim yok' de. SSS: ${JSON.stringify(faqs)} Blog: ${JSON.stringify(blogArticles)}` 
+          content: `Sen Startupsole.com'un resmi chatbotusun. Kullanıcılarla doğrudan ve samimi bir şekilde konuş. Kendi web sitemizin hizmetlerini tanıtıyormuş gibi davran. SSS: ${JSON.stringify(faqs)} Blog: ${JSON.stringify(blogArticles)}` 
         },
+        { role: "user", content: userMessage },
       ],
     });
 
