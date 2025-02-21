@@ -1,70 +1,127 @@
-# Getting Started with Create React App
+Güncellenmiş README.md Dosyası:
+# Chatboot Projesi - Startupsole
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## 📄 Proje Tanımı
 
-## Available Scripts
+Chatboot, **Startupsole.com** için geliştirilmiş, **OpenAI** destekli, sağ alt köşede yer alan bir **sohbet widget'ıdır**. Kullanıcıların web sitesinde hızlıca sorular sormasına ve **OpenAI GPT-4o-mini** modeli ile **akıllı yanıtlar** almasına olanak tanır. Proje, hem masaüstü hem de mobil cihazlarda **kullanıcı dostu bir deneyim** sunar.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## 🚀 Kullanılan Teknolojiler
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **React:** Ana frontend kütüphanesi.
+- **Netlify:** Uygulamanın barındırılması ve **serverless functions** (OpenAI entegrasyonu) için.
+- **OpenAI API:** **GPT-4o-mini** modeli kullanılarak akıllı cevaplar üretiliyor.
+- **Styled Components:** Widget tasarımı ve stil yönetimi.
+- **Firebase Firestore:** Dinamik veri (SSS ve Blog içerikleri) entegrasyonu.
+- **Git & GitHub:** Sürüm kontrolü ve kod yönetimi.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## 🏛️ Proje Mimarisi
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **Frontend:** **React** ile inşa edilmiş ve **Netlify** üzerinden statik olarak sunuluyor.
+- **Backend:** **Netlify Functions** kullanılarak **OpenAI API**'ye güvenli bağlantı sağlanıyor.
+- **Widget Yapısı:** Uygulama, **Netlify** üzerinde **embed edilebilir bir widget** olarak yapılandırılmıştır ve **WordPress**'e kolayca entegre edilebiliyor.
+- **Veri Kaynağı:** **Firebase Firestore** üzerinden **SSS** ve **Blog içerikleri** dinamik olarak çekiliyor.
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 💻 Kurulum ve Çalıştırma
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 📂 **Geliştirme Ortamında:**
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+# Projeyi klonla
+git clone https://github.com/startupsolellc/chatboot-startupsole.git
 
-### `npm run eject`
+# Proje klasörüne gir
+cd chatboot-startupsole
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+# Bağımlılıkları yükle
+npm install
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+# Uygulamayı çalıştır
+npm start
+________________________________________
+🌐 Netlify Üzerinde Yayına Alma:
+Değişiklikleri GitHub'a gönderin:
+bash
+CopyEdit
+git add .
+git commit -m "Güncelleme yapıldı"
+git push
+•	Netlify otomatik olarak build ve deploy işlemini başlatır.
+•	Netlify Functions ve CSP ayarları güncel olmalıdır.
+________________________________________
+🌍 WordPress Entegrasyonu:
+Chatboot widget'ını WordPress'e entegre etmek için aşağıdaki embed kodunu kullanabilirsiniz:
+html
+CopyEdit
+<div id="chatboot-widget-container"></div>
+<script
+    src="https://startupsolechatboot.netlify.app/widget.js"
+    data-src="https://startupsolechatboot.netlify.app"
+    async>
+</script>
+•	WordPress yönetim panelinde: Görünüm > Bileşenler > HTML Bileşeni ekleyerek bu kodu yapıştırın.
+________________________________________
+📂 Klasör Yapısı ve Dosya Açıklamaları:
+plaintext
+CopyEdit
+chatboot-startupsole/
+├── public/                 # Statik dosyalar
+│   ├── index.html          # Uygulama başlangıç sayfası
+│   └── widget.js           # WordPress entegrasyon scripti
+├── src/                    # React bileşenleri
+│   ├── components/
+│   │   └── ChatWidget.js   # Sohbet widget bileşeni
+│   ├── App.js              # Ana uygulama
+│   └── index.js            # React uygulamasını başlatır
+├── netlify/functions/      # OpenAI API proxy fonksiyonu
+│   ├── openaiProxy.js
+│   └── openaiFirebaseProxy.js
+└── package.json            # Proje bağımlılıkları
+________________________________________
+🎨 Tasarım ve Stil:
+•	Font: Plus Jakarta Sans
+•	Metin Stili:
+css
+CopyEdit
+font-style: normal;
+font-weight: 500;
+letter-spacing: -0.28px;
+line-height: 25px;
+font-size: 14px;
+color: #111213;
+•	Renkler:
+css
+CopyEdit
+Birincil Renk: #0066cc
+İkincil Renk: #ffcc00
+Metin Rengi: #111213
+Arka Plan Rengi: #f4f4f4
+________________________________________
+🧠 Eğitim ve Chatbot'u Özelleştirme:
+•	OpenAI API Anahtarı: Netlify Environment Variables içinde REACT_APP_OPENAI_API_KEY olarak tanımlı.
+•	Eğitim Süreci: Uygulama OpenAI GPT-4o-mini modelini kullanıyor.
+•	Veri Kaynağı: Firebase Firestore'dan SSS ve Blog içerikleri otomatik olarak çekiliyor.
+________________________________________
+🔄 Güncellenen Content Security Policy (CSP) Ayarları:
+📄 netlify.toml dosyasında CSP tamamen esnek hale getirildi:
+toml
+CopyEdit
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; connect-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; frame-src *;"
+________________________________________
+👥 Katkıda Bulunmak:
+1.	Fork yapın.
+2.	Yeni özellik ekleyin veya hataları düzeltin.
+3.	Pull request gönderin!
+________________________________________
+📧 İletişim:
+Herhangi bir sorun veya öneriniz varsa lütfen bizimle iletişime geçin:
+•	E-posta: support@startupsole.com
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
