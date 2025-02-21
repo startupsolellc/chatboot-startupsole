@@ -21,14 +21,24 @@ const ChatButton = styled.button`
   background-color: ${primaryColor};
   border: none;
   border-radius: 50%;
-  padding: 10px;
+  padding: 20px;
   color: white;
   cursor: pointer;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
 
   &:hover {
     background-color: ${secondaryColor};
+    transform: scale(1.1);
   }
+   &:active {
+        transform: scale(0.95);
+  }  
 `;
 
 const ChatBox = styled.div`
