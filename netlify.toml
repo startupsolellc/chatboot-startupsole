@@ -5,3 +5,8 @@
 [functions]
   directory = "netlify/functions"
   external_node_modules = ["firebase", "openai", "node-fetch", "rss-parser"]
+
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
