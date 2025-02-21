@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import { Send, MessageCircle } from 'lucide-react';
 
 // Startupsole.com renkleri
-const primaryColor = '#0066cc';
+const primaryColor = '#3F77AE';
 const secondaryColor = '#ffcc00';
 const darkColor = '#333333';
 const lightColor = '#f4f4f4';
@@ -43,7 +43,7 @@ const ChatButton = styled.button`
 
 const ChatBox = styled.div`
   width: 300px;
-  height: 400px;
+  height: 450px;
   background-color: white;
   border-radius: 10px;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
@@ -59,13 +59,14 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-family: Plus Jakarta Sans, serif;
 `;
 
 const MessagesContainer = styled.div`
   flex: 1;
   padding: 10px;
   overflow-y: auto;
-  background-color: ${lightColor};
+  background-color: F4F7FF;
 `;
 
 const Message = styled.div`
@@ -162,8 +163,8 @@ const ChatWidget = () => {
       {isOpen && (
         <ChatBox>
           <Header>
-            Chatboot
-            <button onClick={toggleChat}>✖️</button>
+            AI İçerik Asistanı
+            <button onClick={toggleChat}>🗙</button>
           </Header>
 
           <MessagesContainer>
