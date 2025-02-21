@@ -38,9 +38,31 @@ exports.handler = async (event, context) => {
         const result = await parser.parseStringPromise(xmlData);
         console.log('📦 XML Veri Başarıyla Çözümlendi. Örnek Veri:', JSON.stringify(result, null, 2));
 
+        const faqCollection = collection(db, "faqs");
+        const items = result.rss.channel[0].item;
+
+        for (const item of items) {
+            const question = item.title[0];
+            const answer = item['content:encoded'][0];
+            const category = item.category ? item.category[0]._ : "Genel";
+            const priority = 5;
+
+            const cleanData = {
+                question: question,
+                answer: answer,
+                category: category,
+                priority: priority
+            };
+
+            const faqRef = doc(faqCollection, question);
+            await setDoc(faqRef, cleanData);
+
+            console.log(`✅ Firestore'a eklendi: ${question}`);
+        }
+
         return {
             statusCode: 200,
-            body: JSON.stringify({ message: "XML dosyası başarıyla indirildi ve çözümlendi!" }),
+            body: JSON.stringify({ message: "XML içerikleri başarıyla Firestore'a aktarıldı!" }),
         };
 
     } catch (error) {
