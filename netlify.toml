@@ -1,4 +1,16 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://*.openai.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-src 'self';"
+    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://*.openai.com; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; frame-src 'self'; report-uri https://yourdomain.report-uri.com/r/d/csp/reportOnly;"
+
+# Yalnızca belirli bir path için CSP uygula
+[[headers]]
+  for = "/blog/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://*.openai.com; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; frame-src 'self';"
+
+# Belirli bir path'i CSP'den hariç tut
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self';"
