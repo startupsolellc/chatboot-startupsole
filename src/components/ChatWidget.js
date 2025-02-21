@@ -1,6 +1,6 @@
 // src/components/ChatWidget.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Send, MessageCircle } from 'lucide-react';
 
@@ -119,6 +119,12 @@ const ChatWidget = () => {
     setIsOpen(!isOpen);
   };
 
+  useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      setMessages([{ sender: 'bot', text: 'Merhaba! Size nasıl yardımcı olabilirim?' }]);
+    }
+  }, [isOpen]);
+
   const handleSend = async () => {
     if (input.trim() === '') return;
 
@@ -168,7 +174,7 @@ const ChatWidget = () => {
         {isOpen && (
           <ChatBox>
             <Header>
-              AI İçerik Asistanı
+              Chatboot
               <button onClick={toggleChat} aria-label="Sohbeti Kapat">🗙</button>
             </Header>
 
