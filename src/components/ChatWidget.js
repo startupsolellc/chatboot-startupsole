@@ -10,6 +10,11 @@ const secondaryColor = '#ffcc00';
 const darkColor = '#333333';
 const lightColor = '#f4f4f4';
 
+// Global font ayarı
+const GlobalStyle = styled.div`
+  font-family: 'Plus Jakarta Sans', sans-serif;
+`;
+
 const ChatContainer = styled.div`
   position: fixed;
   bottom: 20px;
@@ -36,9 +41,9 @@ const ChatButton = styled.button`
     background-color: ${secondaryColor};
     transform: scale(1.1);
   }
-   &:active {
-        transform: scale(0.95);
-  }  
+  &:active {
+    transform: scale(0.95);
+  }
 `;
 
 const ChatBox = styled.div`
@@ -59,7 +64,6 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-family: Plus Jakarta Sans, serif;
 `;
 
 const MessagesContainer = styled.div`
@@ -126,10 +130,10 @@ const ChatWidget = () => {
 
     try {
       const response = await fetch('https://startupsolechatboot.netlify.app/.netlify/functions/openaiFirebaseProxy', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ message: input }),
-	});
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input }),
+      });
 
       const data = await response.json();
 
@@ -153,43 +157,46 @@ const ChatWidget = () => {
   };
 
   return (
-    <ChatContainer>
-      {!isOpen && (
-        <ChatButton onClick={toggleChat}>
-          <MessageCircle size={24} />
-        </ChatButton>
-      )}
+    <GlobalStyle>
+      <ChatContainer>
+        {!isOpen && (
+          <ChatButton onClick={toggleChat} aria-label="Sohbeti Aç">
+            <MessageCircle size={24} />
+          </ChatButton>
+        )}
 
-      {isOpen && (
-        <ChatBox>
-          <Header>
-            AI İçerik Asistanı
-            <button onClick={toggleChat}>🗙</button>
-          </Header>
+        {isOpen && (
+          <ChatBox>
+            <Header>
+              AI İçerik Asistanı
+              <button onClick={toggleChat} aria-label="Sohbeti Kapat">🗙</button>
+            </Header>
 
-          <MessagesContainer>
-            {messages.map((msg, index) => (
-              <Message key={index} isUser={msg.sender === 'user'}>
-                {msg.text}
-              </Message>
-            ))}
-          </MessagesContainer>
+            <MessagesContainer>
+              {messages.map((msg, index) => (
+                <Message key={index} isUser={msg.sender === 'user'}>
+                  {msg.text}
+                </Message>
+              ))}
+            </MessagesContainer>
 
-          <InputContainer>
-            <Input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Bir mesaj yaz..."
-            />
-            <SendButton onClick={handleSend}>
-              <Send size={20} />
-            </SendButton>
-          </InputContainer>
-        </ChatBox>
-      )}
-    </ChatContainer>
+            <InputContainer>
+              <Input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Bir mesaj yaz..."
+                aria-label="Mesaj Girişi"
+              />
+              <SendButton onClick={handleSend} aria-label="Gönder">
+                <Send size={20} />
+              </SendButton>
+            </InputContainer>
+          </ChatBox>
+        )}
+      </ChatContainer>
+    </GlobalStyle>
   );
 };
 
