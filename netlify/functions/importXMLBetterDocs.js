@@ -4,6 +4,7 @@ const { initializeApp } = require("firebase/app");
 const { getFirestore, collection, doc, setDoc } = require("firebase/firestore");
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const xml2js = require('xml2js');
+const { JSDOM } = require('jsdom');
 
 // Firebase yapılandırması
 const firebaseConfig = {
@@ -17,6 +18,12 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
+
+// HTML içeriğini düz metne dönüştüren yardımcı fonksiyon
+const stripHtml = (html) => {
+    const dom = new JSDOM(html);
+    return dom.window.document.body.textContent || "";
+};
 
 exports.handler = async (event, context) => {
     try {
@@ -43,7 +50,8 @@ exports.handler = async (event, context) => {
 
         for (const item of items) {
             const question = item.title[0];
-            const answer = item['content:encoded'][0];
+            const rawAnswer = item['content:encoded'][0];
+            const answer = stripHtml(rawAnswer);
             const category = item.category ? item.category[0]._ : "Genel";
             const priority = 5;
 
@@ -62,7 +70,7 @@ exports.handler = async (event, context) => {
 
         return {
             statusCode: 200,
-            body: JSON.stringify({ message: "XML içerikleri başarıyla Firestore'a aktarıldı!" }),
+            body: JSON.stringify({ message: "XML içerikleri başarıyla temizlendi ve Firestore'a aktarıldı!" }),
         };
 
     } catch (error) {
