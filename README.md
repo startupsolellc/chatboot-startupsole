@@ -1,5 +1,5 @@
 Güncellenmiş README.md Dosyası:
-# Chatboot Projesi - Startupsole
+# Chatboot - Startupsole
 
 ## 📄 Proje Tanımı
 
