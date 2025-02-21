@@ -25,7 +25,7 @@
   window.addEventListener('message', async (event) => {
       if (event.data && event.data.type === 'chatboot-message') {
           try {
-              const response = await fetch('/.netlify/functions/openaiFirebaseProxy', {
+              const response = await fetch('/.netlify/functions/openaiFirebaseProxy', { // ✅ DÜZELTİLDİ!
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ message: event.data.message }),
