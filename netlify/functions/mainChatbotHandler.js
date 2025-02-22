@@ -8,6 +8,18 @@ const POPULAR_KEYWORDS_API = `${API_BASE_URL}/fetchPopularKeywords`;
 const FAQS_API = `${API_BASE_URL}/fetchFAQs`;
 const BLOG_ARTICLES_API = `${API_BASE_URL}/fetchBlogArticles`;
 
+// Genel geçer yanıtları filtrelemek için anahtar kelimeler
+const GENERIC_RESPONSES = [
+    "Amerika'da yaygın olarak kullanılan bir terimdir.",
+    "Daha fazla bilgi için lütfen",
+    "yaygın olarak kullanılan bir terimdir"
+];
+
+// Genel geçer yanıt olup olmadığını kontrol eden fonksiyon
+const isGenericResponse = (message) => {
+    return GENERIC_RESPONSES.some(generic => message.includes(generic));
+};
+
 exports.handler = async (event, context) => {
     try {
         if (event.httpMethod !== 'POST') {
@@ -40,7 +52,7 @@ exports.handler = async (event, context) => {
             body: JSON.stringify({ userMessage })
         });
         let data = await response.json();
-        if (data.message && !data.message.includes("bulunamadı")) {
+        if (data.message && !isGenericResponse(data.message)) {
             return {
                 statusCode: 200,
                 body: JSON.stringify(data),
