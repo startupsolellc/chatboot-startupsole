@@ -70,7 +70,7 @@ const MessagesContainer = styled.div`
   flex: 1;
   padding: 10px;
   overflow-y: auto;
-  background-color: F4F7FF;
+  background-color: #F4F7FF;
 `;
 
 const Message = styled.div`
@@ -129,16 +129,15 @@ const ChatWidget = () => {
     if (input.trim() === '') return;
 
     const userMessage = { sender: 'user', text: input };
-    const newMessages = [...messages, userMessage];
-
+    const newMessages = [...messages, userMessage, { sender: 'bot', text: 'Yanıt hazırlanıyor...' }];
     setMessages(newMessages);
     setInput('');
 
     try {
-      const response = await fetch('https://startupsolechatboot.netlify.app/.netlify/functions/openaiFirebaseProxy', {
+      const response = await fetch('https://startupsolechatboot.netlify.app/.netlify/functions/mainChatbotHandler', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ userMessage: input }),
       });
 
       const data = await response.json();
@@ -148,11 +147,11 @@ const ChatWidget = () => {
         text: data.message || 'Maalesef şu anda yanıt veremiyorum.',
       };
 
-      setMessages([...newMessages, botMessage]);
+      setMessages([...messages, userMessage, botMessage]);
     } catch (error) {
       console.error('Sunucu Hatası:', error);
       const errorMessage = { sender: 'bot', text: 'Maalesef şu anda yanıt veremiyorum.' };
-      setMessages([...newMessages, errorMessage]);
+      setMessages([...messages, errorMessage]);
     }
   };
 
