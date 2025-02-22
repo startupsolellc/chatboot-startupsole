@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Send, MessageCircle } from 'lucide-react';
+import parse from 'html-react-parser'; // Güvenli HTML render için eklendi
 
 // Startupsole.com renkleri
 const primaryColor = '#3F77AE';
@@ -179,14 +180,23 @@ const ChatWidget = () => {
             <MessagesContainer>
               {messages.map((msg, index) => (
                 <Message key={index} isUser={msg.sender === 'user'}>
-                  {msg.sender === 'bot' ? (
-                    <div dangerouslySetInnerHTML={{ __html: msg.text }} />
-                  ) : (
-                    msg.text
-                  )}
+                  {msg.sender === 'bot' ? parse(msg.text) : msg.text}
                 </Message>
               ))}
             </MessagesContainer>
+
+            <InputContainer>
+              <Input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Mesajınızı yazın..."
+              />
+              <SendButton onClick={handleSend}>
+                Gönder
+              </SendButton>
+            </InputContainer>
+
           </ChatBox>
         )}
       </ChatContainer>

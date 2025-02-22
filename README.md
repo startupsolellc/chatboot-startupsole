@@ -1,9 +1,9 @@
 Güncellenmiş README.md Dosyası:
-# Chatboot - Startupsole
+# Chatbot - Startupsole
 
 ## 📄 Proje Tanımı
 
-Chatboot, **Startupsole.com** için geliştirilmiş, **OpenAI** destekli, sağ alt köşede yer alan bir **sohbet widget'ıdır**. Kullanıcıların web sitesinde hızlıca sorular sormasına ve **OpenAI GPT-4o-mini** modeli ile **akıllı yanıtlar** almasına olanak tanır. Proje, hem masaüstü hem de mobil cihazlarda **kullanıcı dostu bir deneyim** sunar.
+Chatbot, **Startupsole.com** için geliştirilmiş, **OpenAI** destekli, sağ alt köşede yer alan bir **sohbet widget'ıdır**. Kullanıcıların web sitesinde hızlıca sorular sormasına ve **OpenAI gpt-3.5-turbo** modeli ile **akıllı yanıtlar** almasına olanak tanır. Proje, hem masaüstü hem de mobil cihazlarda **kullanıcı dostu bir deneyim** sunar.
 
 ---
 
@@ -11,7 +11,7 @@ Chatboot, **Startupsole.com** için geliştirilmiş, **OpenAI** destekli, sağ a
 
 - **React:** Ana frontend kütüphanesi.
 - **Netlify:** Uygulamanın barındırılması ve **serverless functions** (OpenAI entegrasyonu) için.
-- **OpenAI API:** **GPT-4o-mini** modeli kullanılarak akıllı cevaplar üretiliyor.
+- **OpenAI API:** **gpt-3.5-turbo** modeli kullanılarak akıllı cevaplar üretiliyor.
 - **Styled Components:** Widget tasarımı ve stil yönetimi.
 - **Firebase Firestore:** Dinamik veri (SSS ve Blog içerikleri) entegrasyonu.
 - **Git & GitHub:** Sürüm kontrolü ve kod yönetimi.
@@ -33,10 +33,10 @@ Chatboot, **Startupsole.com** için geliştirilmiş, **OpenAI** destekli, sağ a
 
 ```bash
 # Projeyi klonla
-git clone https://github.com/startupsolellc/chatboot-startupsole.git
+git clone https://github.com/startupsolellc/Chatboot-startupsole.git
 
 # Proje klasörüne gir
-cd chatboot-startupsole
+cd Chatbot-startupsole
 
 # Bağımlılıkları yükle
 npm install
@@ -55,13 +55,13 @@ git push
 •	Netlify Functions ve CSP ayarları güncel olmalıdır.
 ________________________________________
 🌍 WordPress Entegrasyonu:
-Chatboot widget'ını WordPress'e entegre etmek için aşağıdaki embed kodunu kullanabilirsiniz:
+Chatbot widget'ını WordPress'e entegre etmek için aşağıdaki embed kodunu kullanabilirsiniz:
 html
 CopyEdit
-<div id="chatboot-widget-container"></div>
+<div id="Chatbot-widget-container"></div>
 <script
-    src="https://startupsolechatboot.netlify.app/widget.js"
-    data-src="https://startupsolechatboot.netlify.app"
+    src="https://startupsoleChatboot.netlify.app/widget.js"
+    data-src="https://startupsoleChatboot.netlify.app"
     async>
 </script>
 •	WordPress yönetim panelinde: Görünüm > Bileşenler > HTML Bileşeni ekleyerek bu kodu yapıştırın.
@@ -69,7 +69,7 @@ ________________________________________
 📂 Klasör Yapısı ve Dosya Açıklamaları:
 plaintext
 CopyEdit
-chatboot-startupsole/
+Chatbot-startupsole/
 ├── public/                 # Statik dosyalar
 │   ├── index.html          # Uygulama başlangıç sayfası
 │   └── widget.js           # WordPress entegrasyon scripti
@@ -104,7 +104,7 @@ Arka Plan Rengi: #f4f4f4
 ________________________________________
 🧠 Eğitim ve Chatbot'u Özelleştirme:
 •	OpenAI API Anahtarı: Netlify Environment Variables içinde REACT_APP_OPENAI_API_KEY olarak tanımlı.
-•	Eğitim Süreci: Uygulama OpenAI GPT-4o-mini modelini kullanıyor.
+•	Eğitim Süreci: Uygulama OpenAI gpt-3.5-turbo modelini kullanıyor.
 •	Veri Kaynağı: Firebase Firestore'dan SSS ve Blog içerikleri otomatik olarak çekiliyor.
 ________________________________________
 🔄 Güncellenen Content Security Policy (CSP) Ayarları:
@@ -115,6 +115,85 @@ CopyEdit
   for = "/*"
   [headers.values]
     Content-Security-Policy = "default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; connect-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; frame-src *;"
+
+
+ Chatbot Projesi Güncelleme Özeti
+
+Bu döküman, Chatbot projesinde son yapılan güncellemeleri ve iyileştirmeleri özetlemektedir. Özellikle OpenAI entegrasyonu, HTML render desteği ve maliyet optimizasyonları hakkında bilgi verecektir.
+
+🚀 Yapılan Güncellemeler
+
+1. OpenAI Model Güncellemesi
+
+Model Değişikliği: OpenAI modelini "gpt-4o-mini" yerine "gpt-3.5-turbo" modeline geçirdik.
+
+Neden?
+
+Maliyet Avantajı: GPT-3.5-turbo modeli, özellikle yüksek hacimli taleplerde maliyetleri önemli ölçüde düşürmektedir.
+
+Performans: Yanıt sürelerinde iyileşme sağlanmıştır.
+
+2. HTML Render Desteği
+
+ChatWidget.js Güncellemesi:
+
+Yanıtların HTML formatında gösterilmesi için dangerouslySetInnerHTML kullanıldı.
+
+Zengin metin formatları, tıklanabilir linkler ve HTML içerikleri artık doğru şekilde gösteriliyor.
+
+Örnek:
+
+<p>Ücretsiz EIN başvurusu için <a href='https://startupsole.com/ucretsiz-ein-basvuru-kampanyasi/' target='_blank'>bu içeriğe</a> göz atabilirsiniz.</p>
+
+3. Anahtar Kelimeye Linkleme ve HTML Yanıt Formatı
+
+Yanıtların Kalitesi:
+
+OpenAI'ye gönderilen sistem mesajı güncellendi.
+
+Yanıtların ilgili anahtar kelime öbeğine gömülü linklerle ve HTML formatında gelmesi sağlandı.
+
+Örnek Yanıt:
+
+<p>Daha fazla bilgi almak için <a href="https://startupsole.com/amazon-icin-abdde-sirket-kurulabilen-9-eyalet/" target="_blank">bu içeriğe göz atın</a>.</p>
+
+4. Güvenlik ve Performans İyileştirmeleri
+
+dangerouslySetInnerHTML Kullanımı:
+
+Sadece OpenAI'den gelen ve güvenli olduğu bilinen yanıtlar HTML olarak render ediliyor.
+
+Küçük Güvenlik Kontrolleri:
+
+Kullanıcı tarafından girilen içerikler asla HTML olarak render edilmiyor, sadece bot yanıtları için geçerli.
+
+📂 Güncellenen Dosyalar
+
+mainChatbotHandler.js
+
+OpenAI modeli "gpt-3.5-turbo" olarak güncellendi.
+
+Yanıtların HTML formatında ve linklerin anahtar kelimeye gömülü şekilde gelmesi sağlandı.
+
+ChatWidget.js
+
+dangerouslySetInnerHTML kullanılarak HTML render desteği eklendi.
+
+Kullanıcı dostu ve profesyonel bir yanıt görüntüleme sağlandı.
+
+🔍 Test ve Kontrol
+
+Yanıtların HTML formatında görünümü:
+
+Linklerin doğru şekilde tıklanabilir olması ve yeni sekmede açılması test edildi.
+
+Yanıt Performansı:
+
+"gpt-3.5-turbo" modeli ile yanıt hızında iyileşmeler gözlemlendi.
+
+Özellikle maliyet/performans dengesinin optimize edildiği doğrulandı.
+
+   
 ________________________________________
 👥 Katkıda Bulunmak:
 1.	Fork yapın.
