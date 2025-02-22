@@ -15,6 +15,7 @@ const darkColor = '#333333';
 // Global font ayarı
 const GlobalStyle = styled.div`
   font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px; /* Hem mobil hem de masaüstü için optimum font boyutu */
 `;
 
 const ChatContainer = styled.div`
@@ -78,7 +79,7 @@ const MessagesContainer = styled.div`
 `;
 
 const Message = styled.div`
-  background-color: ${({ isUser }) => (isUser ? primaryColor : '#e0e0e0')};
+  background-color: #ffffff;
   color: ${({ isUser }) => (isUser ? 'white' : darkColor)};
   padding: 8px 12px;
   border-radius: 10px;
@@ -176,7 +177,7 @@ const ChatWidget = () => {
         {isOpen && (
           <ChatBox>
             <Header>
-              Chatboot
+              Startupsole Asistan
               <button onClick={toggleChat} aria-label="Sohbeti Kapat">
                 <CloseIcon />
               </button>
