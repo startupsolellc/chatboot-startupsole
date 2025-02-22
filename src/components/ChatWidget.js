@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { MessageCircle } from 'lucide-react';
 import parse from 'html-react-parser';
-import CloseIcon from '@mui/icons-material/Close';
+import CloseIcon from '@mui/icons-material/Menu';
 import SendIcon from '@mui/icons-material/Send';
 
 // Startupsole.com renkleri
@@ -49,8 +49,10 @@ const ChatButton = styled.button`
 `;
 
 const ChatBox = styled.div`
-  width: 300px;
-  height: 450px;
+  width: 90vw;
+  max-width: 400px;
+  height: 50vh;
+  max-height: 600px;
   background-color: white;
   border-radius: 10px;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
