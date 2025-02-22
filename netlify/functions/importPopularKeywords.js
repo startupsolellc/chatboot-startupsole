@@ -2,8 +2,7 @@
 
 const { initializeApp } = require("firebase/app");
 const { getFirestore, collection, doc, setDoc } = require("firebase/firestore");
-const fs = require('fs');
-const path = require('path');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 const xlsx = require('xlsx');
 
 // Firebase yapılandırması
@@ -21,11 +20,22 @@ const db = getFirestore(firebaseApp);
 
 exports.handler = async (event, context) => {
     try {
-        console.log("📦 Popüler Anahtar Kelimeler ve Makale Linkleri Yükleniyor...");
+        console.log("📦 Popüler Anahtar Kelimeler ve Makale Linkleri URL'den Yükleniyor...");
 
-        // Excel dosyasını okuyalım
-        const filePath = path.join(__dirname, 'keywords_better_docs.xlsx');
-        const workbook = xlsx.readFile(filePath);
+        // Excel dosyasını URL üzerinden indirme
+        const fileUrl = 'https://startupsole.com/wp-content/uploads/2025/02/keywords_better_docs.xlsx';
+        const response = await fetch(fileUrl);
+        if (!response.ok) {
+            console.error("Excel dosyası indirilemedi:", response.status, response.statusText);
+            return {
+                statusCode: 500,
+                body: JSON.stringify({ error: `Excel dosyası indirilemedi: ${response.status} ${response.statusText}` }),
+            };
+        }
+
+        // Excel verilerini okuma
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = xlsx.read(arrayBuffer, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
