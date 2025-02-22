@@ -76,7 +76,7 @@ exports.handler = async (event, context) => {
 
     // OpenAI'ye Sistem Mesajı ve Kullanıcı Mesajını Gönder
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-3.5-turbo",
       messages: [
         { 
           role: "system", 

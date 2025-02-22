@@ -81,6 +81,11 @@ const Message = styled.div`
   margin-bottom: 5px;
   max-width: 70%;
   align-self: ${({ isUser }) => (isUser ? 'flex-end' : 'flex-start')};
+
+  a {
+    color: ${secondaryColor};
+    text-decoration: none;
+  }
 `;
 
 const InputContainer = styled.div`
@@ -155,12 +160,6 @@ const ChatWidget = () => {
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSend();
-    }
-  };
-
   return (
     <GlobalStyle>
       <ChatContainer>
@@ -180,24 +179,14 @@ const ChatWidget = () => {
             <MessagesContainer>
               {messages.map((msg, index) => (
                 <Message key={index} isUser={msg.sender === 'user'}>
-                  {msg.text}
+                  {msg.sender === 'bot' ? (
+                    <div dangerouslySetInnerHTML={{ __html: msg.text }} />
+                  ) : (
+                    msg.text
+                  )}
                 </Message>
               ))}
             </MessagesContainer>
-
-            <InputContainer>
-              <Input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder="Bir mesaj yaz..."
-                aria-label="Mesaj Girişi"
-              />
-              <SendButton onClick={handleSend} aria-label="Gönder">
-                <Send size={20} />
-              </SendButton>
-            </InputContainer>
           </ChatBox>
         )}
       </ChatContainer>
