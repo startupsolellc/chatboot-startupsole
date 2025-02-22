@@ -80,7 +80,7 @@ exports.handler = async (event, context) => {
       messages: [
         { 
           role: "system", 
-          content: `Sen Startupsole.com'un resmi chatbotusun. Kullanıcılarla doğrudan ve samimi bir şekilde konuş. Eğer ilgili SSS'lerde uygun yanıt varsa bunu kullan, değilse en uygun blog makalesini öner. SSS: ${JSON.stringify(relevantFaqs)} Blog: ${JSON.stringify(relevantBlogs)}` 
+          content: `Sen Startupsole.com'un resmi chatbotusun. Kullanıcılarla doğrudan ve samimi bir şekilde konuş. Yanıt verirken linkleri ilgili anahtar kelimelere veya "bu içeriğe" gibi ifadelere gömülü HTML formatında ver. Örneğin: <a href='https://example.com' target='_blank'>bu içeriğe</a> veya <a href='https://example.com' target='_blank'>anahtar kelime</a>. SSS: ${JSON.stringify(relevantFaqs)} Blog: ${JSON.stringify(relevantBlogs)}` 
         },
         { role: "user", content: userMessage },
       ],
