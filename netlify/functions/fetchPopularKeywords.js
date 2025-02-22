@@ -1,7 +1,7 @@
 // netlify/functions/fetchPopularKeywords.js
 
 const { initializeApp } = require("firebase/app");
-const { getFirestore, collection, getDocs, query, where } = require("firebase/firestore");
+const { getFirestore, collection, getDocs } = require("firebase/firestore");
 
 // Firebase yapılandırması
 const firebaseConfig = {
@@ -18,7 +18,27 @@ const db = getFirestore(firebaseApp);
 
 exports.handler = async (event, context) => {
     try {
-        const { userMessage } = JSON.parse(event.body);
+        if (event.httpMethod !== 'POST') {
+            return {
+                statusCode: 405,
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                body: JSON.stringify({ error: "Yalnızca POST istekleri kabul edilmektedir." }),
+            };
+        }
+
+        const { userMessage } = JSON.parse(event.body || '{}');
+        if (!userMessage) {
+            return {
+                statusCode: 400,
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                body: JSON.stringify({ error: "Geçersiz veya boş kullanıcı mesajı." }),
+            };
+        }
+
         console.log("📥 Kullanıcı Mesajı:", userMessage);
 
         const keywordCollection = collection(db, "popular_keywords");
@@ -45,6 +65,9 @@ exports.handler = async (event, context) => {
         console.log("❌ Anahtar kelime bulunamadı.");
         return {
             statusCode: 200,
+            headers: {
+                "Content-Type": "application/json; charset=utf-8"
+            },
             body: JSON.stringify({ message: "Maalesef bu konuda popüler bir anahtar kelime bulunamadı." }),
         };
 
@@ -52,6 +75,9 @@ exports.handler = async (event, context) => {
         console.error("❌ Hata Detayı:", error.message, error.stack);
         return {
             statusCode: 500,
+            headers: {
+                "Content-Type": "application/json; charset=utf-8"
+            },
             body: JSON.stringify({ error: "Popüler anahtar kelimeleri ararken bir hata oluştu." }),
         };
     }
