@@ -4,21 +4,8 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 
 // API URL'leri
 const API_BASE_URL = 'https://startupsolechatboot.netlify.app/.netlify/functions';
-const POPULAR_KEYWORDS_API = `${API_BASE_URL}/fetchPopularKeywords`;
 const FAQS_API = `${API_BASE_URL}/fetchFAQs`;
 const BLOG_ARTICLES_API = `${API_BASE_URL}/fetchBlogArticles`;
-
-// Genel geçer yanıtları filtrelemek için anahtar kelimeler
-const GENERIC_RESPONSES = [
-    "Amerika'da yaygın olarak kullanılan bir terimdir.",
-    "Daha fazla bilgi için lütfen",
-    "yaygın olarak kullanılan bir terimdir"
-];
-
-// Genel geçer yanıt olup olmadığını kontrol eden fonksiyon
-const isGenericResponse = (message) => {
-    return GENERIC_RESPONSES.some(generic => message.includes(generic));
-};
 
 exports.handler = async (event, context) => {
     try {
@@ -45,27 +32,13 @@ exports.handler = async (event, context) => {
 
         console.log("📥 Kullanıcı Mesajı:", userMessage);
 
-        // 1. Adım: Popüler Anahtar Kelimeler API çağrısı
-        let response = await fetch(POPULAR_KEYWORDS_API, {
+        // 1. Adım: SSS API çağrısı
+        let response = await fetch(FAQS_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userMessage })
         });
         let data = await response.json();
-        if (data.message && !isGenericResponse(data.message)) {
-            return {
-                statusCode: 200,
-                body: JSON.stringify(data),
-            };
-        }
-
-        // 2. Adım: SSS API çağrısı
-        response = await fetch(FAQS_API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userMessage })
-        });
-        data = await response.json();
         if (data.message && !data.message.includes("bulunamadı")) {
             return {
                 statusCode: 200,
@@ -73,7 +46,7 @@ exports.handler = async (event, context) => {
             };
         }
 
-        // 3. Adım: Blog Makaleleri API çağrısı
+        // 2. Adım: Blog Makaleleri API çağrısı
         response = await fetch(BLOG_ARTICLES_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -90,7 +63,7 @@ exports.handler = async (event, context) => {
         // Hiçbir API yanıt vermezse genel mesaj
         return {
             statusCode: 200,
-            body: JSON.stringify({ message: "Maalesef bu konuda uygun bir yanıt bulamadım." }),
+            body: JSON.stringify({ message: "Üzgünüm, bu konuda yardımcı olamıyorum." }),
         };
 
     } catch (error) {
