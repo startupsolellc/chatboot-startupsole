@@ -11,6 +11,10 @@ import SendIcon from '@mui/icons-material/Send';
 const primaryColor = '#3F77AE';
 const secondaryColor = '#ffcc00';
 const darkColor = '#333333';
+const userMessageBackground = '#f1f1f1';
+const botMessageBackground = '#e0f7fa';
+const userTextColor = darkColor;
+const botTextColor = primaryColor;
 
 // Global font ayarı
 const GlobalStyle = styled.div`
@@ -79,8 +83,8 @@ const MessagesContainer = styled.div`
 `;
 
 const Message = styled.div`
-  background-color: #ffffff;
-  color: ${({ isUser }) => (isUser ? 'white' : darkColor)};
+  background-color: ${({ isUser }) => (isUser ? userMessageBackground : botMessageBackground)};
+  color: ${({ isUser }) => (isUser ? userTextColor : botTextColor)};
   padding: 8px 12px;
   border-radius: 10px;
   margin-bottom: 5px;
