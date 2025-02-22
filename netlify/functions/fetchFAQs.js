@@ -16,6 +16,33 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
+// Kullanıcı mesajında en uygun SSS eşleşmesini bulmak için basit benzerlik kontrolü
+const findBestMatch = (userMessage, questions) => {
+    let bestMatch = null;
+    let highestScore = 0;
+
+    for (const question of questions) {
+        const lowerCaseMessage = userMessage.toLowerCase();
+        const lowerCaseQuestion = question.toLowerCase();
+
+        // Anahtar kelime tabanlı basit benzerlik skoru
+        let score = 0;
+        const words = lowerCaseQuestion.split(" ");
+        words.forEach(word => {
+            if (lowerCaseMessage.includes(word)) {
+                score++;
+            }
+        });
+
+        if (score > highestScore) {
+            highestScore = score;
+            bestMatch = question;
+        }
+    }
+
+    return bestMatch;
+};
+
 exports.handler = async (event, context) => {
     try {
         if (event.httpMethod !== 'POST') {
@@ -44,22 +71,23 @@ exports.handler = async (event, context) => {
         const faqCollection = collection(db, "faqs");
         const faqSnapshot = await getDocs(faqCollection);
 
-        for (const doc of faqSnapshot.docs) {
-            const { question, answer } = doc.data();
+        const questions = faqSnapshot.docs.map(doc => doc.data().question);
+        const bestMatch = findBestMatch(userMessage, questions);
 
-            if (userMessage.toLowerCase().includes(question.toLowerCase())) {
-                console.log(`✅ SSS Eşleşmesi Bulundu: ${question}`);
+        if (bestMatch) {
+            const matchedDoc = faqSnapshot.docs.find(doc => doc.data().question === bestMatch);
+            const { question, answer } = matchedDoc.data();
+            console.log(`✅ En Uygun SSS Eşleşmesi: ${question}`);
 
-                const responseMessage = `Kullanıcıların sıkça sorduğu bir soru: "${question}". Cevap: "${answer}"`;
+            const responseMessage = `Kullanıcıların sıkça sorduğu bir soru: "${question}". Cevap: "${answer}"`;
 
-                return {
-                    statusCode: 200,
-                    headers: {
-                        "Content-Type": "application/json; charset=utf-8"
-                    },
-                    body: JSON.stringify({ message: responseMessage }),
-                };
-            }
+            return {
+                statusCode: 200,
+                headers: {
+                    "Content-Type": "application/json; charset=utf-8"
+                },
+                body: JSON.stringify({ message: responseMessage }),
+            };
         }
 
         console.log("❌ SSS Eşleşmesi Bulunamadı.");
