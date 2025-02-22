@@ -2,14 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Send, MessageCircle } from 'lucide-react';
-import parse from 'html-react-parser'; // Güvenli HTML render için eklendi
+import { MessageCircle } from 'lucide-react';
+import parse from 'html-react-parser';
+import CloseIcon from '@mui/icons-material/Close';
+import SendIcon from '@mui/icons-material/Send';
 
 // Startupsole.com renkleri
 const primaryColor = '#3F77AE';
 const secondaryColor = '#ffcc00';
 const darkColor = '#333333';
-const lightColor = '#f4f4f4';
 
 // Global font ayarı
 const GlobalStyle = styled.div`
@@ -174,7 +175,9 @@ const ChatWidget = () => {
           <ChatBox>
             <Header>
               Chatboot
-              <button onClick={toggleChat} aria-label="Sohbeti Kapat">🗙</button>
+              <button onClick={toggleChat} aria-label="Sohbeti Kapat">
+                <CloseIcon />
+              </button>
             </Header>
 
             <MessagesContainer>
@@ -196,10 +199,9 @@ const ChatWidget = () => {
                 placeholder="Mesajınızı yazın..."
               />
               <SendButton onClick={handleSend}>
-                Gönder
+                <SendIcon />
               </SendButton>
             </InputContainer>
-
           </ChatBox>
         )}
       </ChatContainer>
