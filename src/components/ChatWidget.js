@@ -189,11 +189,11 @@ const ChatWidget = () => {
             </Header>
 
             <MessagesContainer>
-              {messages.map((msg, index) => (
-                <Message key={index} isUser={msg.sender === 'user'}>
-                  {msg.sender === 'bot' ? parse(msg.text) : msg.text}
+                {messages.map((msg, index) => (
+                    <Message key={index} isUser={msg.sender === 'user'}>
+                        {msg.sender === 'bot' ? parse(msg.text) : msg.text}
                 </Message>
-              ))}
+                 ))}
             </MessagesContainer>
 
             <InputContainer>

@@ -80,7 +80,7 @@ exports.handler = async (event, context) => {
         messages: [
             { 
                 role: "system", 
-                content: `Sen Startupsole.com'un resmi chatbotusun. Kullanıcılarla doğrudan ve samimi bir şekilde konuş. Yanıt verirken linkleri ilgili anahtar kelimelere veya "bu içeriğe" gibi ifadelere gömülü HTML formatında ver. SSS: ${JSON.stringify(relevantFaqs)} Blog: ${JSON.stringify(relevantBlogs)}`
+                content: `Sen Startupsole.com'un resmi chatbotusun. Kullanıcılarla doğrudan ve samimi bir şekilde konuş. Yanıt verirken linkleri ilgili anahtar kelimelere veya "bu içeriğe" gibi ifadelere gömülü HTML formatında ver. Örneğin: <a href='https://example.com' target='_blank'>bu içeriğe</a> veya <a href='https://startupsole.com/ein-nedir/' target='_blank'>EIN Nedir?</a>. SSS: ${JSON.stringify(relevantFaqs)} Blog: ${JSON.stringify(relevantBlogs)}`
             },
             { role: "user", content: userMessage },
         ],
