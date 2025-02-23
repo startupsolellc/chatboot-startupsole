@@ -74,17 +74,19 @@ exports.handler = async (event, context) => {
     console.log("🔍 İlgili SSS'ler:", relevantFaqs);
     console.log("🔍 İlgili Bloglar:", relevantBlogs);
 
-    // OpenAI'ye Sistem Mesajı ve Kullanıcı Mesajını Gönder
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { 
+  // OpenAI'ye Sistem Mesajı ve Kullanıcı Mesajını Gönder
+const response = await openai.chat.completions.create({
+  model: "gpt-4o-mini",
+  messages: [
+      { 
           role: "system", 
-          content: `Sen Startupsole.com'un resmi chatbotusun. Kullanıcılarla doğrudan ve samimi bir şekilde konuş. Yanıt verirken linkleri ilgili anahtar kelimelere veya "bu içeriğe" gibi ifadelere gömülü HTML formatında ver. Örneğin: <a href='https://example.com' target='_blank'>bu içeriğe</a> veya <a href='https://example.com' target='_blank'>anahtar kelime</a>. SSS: ${JSON.stringify(relevantFaqs)} Blog: ${JSON.stringify(relevantBlogs)}` 
-        },
-        { role: "user", content: userMessage },
-      ],
-    });
+          content: `Sen Startupsole.com'un resmi chatbotusun. Kullanıcılarla doğrudan ve samimi bir şekilde konuş. Yanıt verirken linkleri ilgili anahtar kelimelere veya "bu içeriğe" gibi ifadelere gömülü HTML formatında ver. Örneğin: <a href='https://example.com' target='_blank'>bu içeriğe</a> veya <a href='https://example.com' target='_blank'>anahtar kelime</a>. SSS: ${JSON.stringify(relevantFaqs)} Blog: ${JSON.stringify(relevantBlogs)}`
+      },
+      { role: "user", content: userMessage },
+  ],
+  max_tokens: 200,
+  temperature: 0.6,
+});
 
     console.log("🧠 OpenAI Yanıtı:", response);
 
@@ -93,7 +95,7 @@ exports.handler = async (event, context) => {
       headers: {
         "Content-Type": "application/json; charset=utf-8"
       },
-      body: JSON.stringify({ message: response.choices[0].message.content }),
+      body: JSON.stringify({ message: aiResponse || "Yanıt alınamadı." }),
     };
   } catch (error) {
     console.error("❌ Hata Detayı:", error.message, error.stack);
