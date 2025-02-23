@@ -7,7 +7,6 @@ import parse from 'html-react-parser';
 import CloseIcon from '@mui/icons-material/Menu';
 import SendIcon from '@mui/icons-material/Send';
 
-// Startupsole.com renkleri
 const primaryColor = '#3F77AE';
 const secondaryColor = '#ffcc00';
 const darkColor = '#333333';
@@ -16,7 +15,6 @@ const botMessageBackground = '#e0f7fa';
 const userTextColor = darkColor;
 const botTextColor = primaryColor;
 
-// Global font ayarı
 const GlobalStyle = styled.div`
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 14px;
@@ -128,6 +126,7 @@ const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [sessionId, setSessionId] = useState(localStorage.getItem('sessionId') || null);
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
@@ -150,10 +149,14 @@ const ChatWidget = () => {
       const response = await fetch('https://startupsolechatboot.netlify.app/.netlify/functions/mainChatbotHandler', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userMessage: input }),
+        body: JSON.stringify({ userMessage: input, sessionId }),
       });
 
-      const data = await response.json().catch(() => ({ message: 'Geçersiz yanıt formatı.' }));
+      const data = await response.json();
+      if (data.sessionId) {
+        setSessionId(data.sessionId);
+        localStorage.setItem('sessionId', data.sessionId);
+      }
 
       setMessages((prevMessages) => [
         ...prevMessages.slice(0, prevMessages.length - 1),
