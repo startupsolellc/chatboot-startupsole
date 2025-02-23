@@ -148,7 +148,7 @@ const ChatWidget = () => {
     setInput('');
 
     try {
-      const response = await fetch('https://startupsolechatboot.netlify.app/.netlify/functions/mainChatbotHandler', {
+      const response = await fetch('https://startupsolechatboot.netlify.app/.netlify/functions/mainChatbotHandler.js', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userMessage: input }),
