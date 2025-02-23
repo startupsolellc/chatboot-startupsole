@@ -82,8 +82,9 @@ exports.handler = async (event, context) => {
             },
             { role: "user", content: userMessage },
         ],
-        max_tokens: 200,
+        max_tokens: 400, // Yanıt uzunluğunu artırdım
         temperature: 0.6,
+        stop: ["\n", "Yanıt tamamlandı."] // Yanıtın düzgün bitmesi için durdurma komutu
     });
 
     const aiResponse = response?.choices?.[0]?.message?.content || "Yanıt alınamadı.";
