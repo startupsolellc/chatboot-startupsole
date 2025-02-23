@@ -19,7 +19,7 @@ const botTextColor = primaryColor;
 // Global font ayarı
 const GlobalStyle = styled.div`
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 14px; /* Hem mobil hem de masaüstü için optimum font boyutu */
+  font-size: 14px;
 `;
 
 const ChatContainer = styled.div`
@@ -143,8 +143,7 @@ const ChatWidget = () => {
     if (input.trim() === '') return;
 
     const userMessage = { sender: 'user', text: input };
-    const newMessages = [...messages, userMessage, { sender: 'bot', text: 'Yanıt hazırlanıyor...' }];
-    setMessages(newMessages);
+    setMessages((prevMessages) => [...prevMessages, userMessage, { sender: 'bot', text: 'Yanıt hazırlanıyor...' }]);
     setInput('');
 
     try {
@@ -156,17 +155,16 @@ const ChatWidget = () => {
 
       const data = await response.json().catch(() => ({ message: 'Geçersiz yanıt formatı.' }));
 
-
-      const botMessage = {
-        sender: 'bot',
-        text: data.message || 'Maalesef şu anda yanıt veremiyorum.',
-      };
-
-      setMessages((prevMessages) => [...prevMessages, botMessage]);
+      setMessages((prevMessages) => [
+        ...prevMessages.slice(0, prevMessages.length - 1),
+        { sender: 'bot', text: data.message || 'Maalesef şu anda yanıt veremiyorum.' }
+      ]);
     } catch (error) {
       console.error('Sunucu Hatası:', error);
-      const errorMessage = { sender: 'bot', text: 'Maalesef şu anda yanıt veremiyorum.' };
-      setMessages([...messages, errorMessage]);
+      setMessages((prevMessages) => [
+        ...prevMessages.slice(0, prevMessages.length - 1),
+        { sender: 'bot', text: 'Maalesef şu anda yanıt veremiyorum.' }
+      ]);
     }
   };
 

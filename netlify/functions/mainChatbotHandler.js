@@ -24,7 +24,6 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
-// Kullanıcı mesajına en yakın içerikleri bulmak için benzerlik skoru hesapla
 const findRelevantContent = (userMessage, contents, key) => {
     return contents
         .map((content) => {
@@ -32,7 +31,7 @@ const findRelevantContent = (userMessage, contents, key) => {
             return { ...content, score };
         })
         .sort((a, b) => b.score - a.score)
-        .slice(0, 5); // En yüksek skorlu ilk 5 içeriği al
+        .slice(0, 5);
 };
 
 exports.handler = async (event, context) => {
@@ -46,7 +45,6 @@ exports.handler = async (event, context) => {
 
     console.log("📥 Kullanıcı Mesajı:", userMessage);
 
-    // Firebase'den Hem SSS Hem de Blog Verilerini Çek
     const faqCollection = collection(db, "faqs"); 
     const blogCollection = collection(db, "blog_articles");
 
