@@ -50,8 +50,10 @@ exports.handler = async (event, context) => {
     const faqCollection = collection(db, "faqs"); 
     const blogCollection = collection(db, "blog_articles");
 
-    const faqSnapshot = await getDocs(faqCollection);
-    const blogSnapshot = await getDocs(blogCollection);
+    const [faqSnapshot, blogSnapshot] = await Promise.all([
+        getDocs(faqCollection),
+        getDocs(blogCollection)
+    ]);
 
     const faqs = faqSnapshot.docs.map((doc) => ({
         question: doc.data().question,
@@ -60,43 +62,44 @@ exports.handler = async (event, context) => {
 
     const blogArticles = blogSnapshot.docs.map((doc) => ({
         title: doc.data().title,
-        excerpt: doc.data().excerpt?.slice(0, 200), // Yalnızca 200 karaktere kadar al
+        excerpt: doc.data().excerpt?.slice(0, 200),
         link: doc.data().link
     }));
 
     console.log("📂 Firebase'den Alınan SSS Verileri:", faqs); 
     console.log("📂 Firebase'den Alınan Blog Verileri:", blogArticles);
 
-    // Kullanıcı mesajına göre en alakalı SSS ve Blog içeriklerini filtrele
     const relevantFaqs = findRelevantContent(userMessage, faqs, 'question');
     const relevantBlogs = findRelevantContent(userMessage, blogArticles, 'title');
 
     console.log("🔍 İlgili SSS'ler:", relevantFaqs);
     console.log("🔍 İlgili Bloglar:", relevantBlogs);
 
-  // OpenAI'ye Sistem Mesajı ve Kullanıcı Mesajını Gönder
-const response = await openai.chat.completions.create({
-  model: "gpt-4o-mini",
-  messages: [
-      { 
-          role: "system", 
-          content: `Sen Startupsole.com'un resmi chatbotusun. Kullanıcılarla doğrudan ve samimi bir şekilde konuş. Yanıt verirken linkleri ilgili anahtar kelimelere veya "bu içeriğe" gibi ifadelere gömülü HTML formatında ver. Örneğin: <a href='https://example.com' target='_blank'>bu içeriğe</a> veya <a href='https://example.com' target='_blank'>anahtar kelime</a>. SSS: ${JSON.stringify(relevantFaqs)} Blog: ${JSON.stringify(relevantBlogs)}`
-      },
-      { role: "user", content: userMessage },
-  ],
-  max_tokens: 200,
-  temperature: 0.6,
-});
+    const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+            { 
+                role: "system", 
+                content: `Sen Startupsole.com'un resmi chatbotusun. Kullanıcılarla doğrudan ve samimi bir şekilde konuş. Yanıt verirken linkleri ilgili anahtar kelimelere veya "bu içeriğe" gibi ifadelere gömülü HTML formatında ver. SSS: ${JSON.stringify(relevantFaqs)} Blog: ${JSON.stringify(relevantBlogs)}`
+            },
+            { role: "user", content: userMessage },
+        ],
+        max_tokens: 200,
+        temperature: 0.6,
+    });
 
-    console.log("🧠 OpenAI Yanıtı:", response);
+    const aiResponse = response?.choices?.[0]?.message?.content || "Yanıt alınamadı.";
+
+    console.log("🧠 OpenAI Yanıtı:", aiResponse);
 
     return {
-      statusCode: 200,
-      headers: {
-        "Content-Type": "application/json; charset=utf-8"
-      },
-      body: JSON.stringify({ message: aiResponse || "Yanıt alınamadı." }),
+        statusCode: 200,
+        headers: {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        body: JSON.stringify({ message: aiResponse }),
     };
+
   } catch (error) {
     console.error("❌ Hata Detayı:", error.message, error.stack);
     return {

@@ -148,20 +148,21 @@ const ChatWidget = () => {
     setInput('');
 
     try {
-      const response = await fetch('https://startupsolechatboot.netlify.app/.netlify/functions/mainChatbotHandler.js', {
+      const response = await fetch('https://startupsolechatboot.netlify.app/.netlify/functions/mainChatbotHandler', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userMessage: input }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({ message: 'Geçersiz yanıt formatı.' }));
+
 
       const botMessage = {
         sender: 'bot',
         text: data.message || 'Maalesef şu anda yanıt veremiyorum.',
       };
 
-      setMessages([...messages, userMessage, botMessage]);
+      setMessages((prevMessages) => [...prevMessages, botMessage]);
     } catch (error) {
       console.error('Sunucu Hatası:', error);
       const errorMessage = { sender: 'bot', text: 'Maalesef şu anda yanıt veremiyorum.' };
