@@ -1,5 +1,3 @@
-// netlify/functions/mainChatbotHandler.js
-
 const { OpenAI } = require("openai");
 const { initializeApp } = require("firebase/app");
 const { 
@@ -62,8 +60,7 @@ async function getOpenAIResponse(messages, maxTokens = 600) {
         model: "gpt-4o-mini",
         messages: messages,
         max_tokens: maxTokens,
-        temperature: 0.6,
-        stop: ["\n", "Yanıt tamamlandı."]
+        temperature: 0.6
     });
 
     return response?.choices?.[0]?.message?.content || "Yanıt alınamadı.";
@@ -114,6 +111,7 @@ exports.handler = async (event, context) => {
     await saveSessionHistory(sessionId, sessionMessages);
 
     console.log("🧠 OpenAI Tam Yanıt:", aiResponse);
+    console.log("📜 Mesaj Geçmişi:", sessionMessages);
 
     return {
         statusCode: 200,
