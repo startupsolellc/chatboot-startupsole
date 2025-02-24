@@ -27,22 +27,13 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
-const findRelevantContent = (userMessage, contents, key) => {
-    return contents
-        .map((content) => {
-            const score = content[key].toLowerCase().split(" ").filter(word => userMessage.toLowerCase().includes(word)).length;
-            return { ...content, score };
-        })
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5);
-};
-
 async function getSessionHistory(sessionId) {
     const sessionDoc = doc(db, "sessions", sessionId);
     const sessionSnapshot = await getDoc(sessionDoc);
     if (sessionSnapshot.exists()) {
         console.log("📂 Mevcut Oturum Bulundu:", sessionId);
-        return sessionSnapshot.data().messages || [];
+        const messages = sessionSnapshot.data().messages || [];
+        return messages.slice(-10); // Sadece son 10 mesajı al
     }
     console.log("🆕 Yeni Oturum Oluşturuluyor:", sessionId);
     await setDoc(sessionDoc, { messages: [] });
@@ -99,13 +90,14 @@ exports.handler = async (event, context) => {
         link: doc.data().link
     }));
 
-    const relevantFaqs = findRelevantContent(userMessage, faqs, 'question');
-    const relevantBlogs = findRelevantContent(userMessage, blogArticles, 'title');
-
     const sessionMessages = await getSessionHistory(sessionId);
     sessionMessages.push({ role: "user", content: userMessage });
 
-    const aiResponse = await getOpenAIResponse(sessionMessages);
+    const aiResponse = await getOpenAIResponse([
+        ...sessionMessages,
+        ...faqs.map(faq => ({ role: "system", content: `Sıkça Sorulan Soru: ${faq.question} - Cevap: ${faq.answer.slice(0, 100)}...` })),
+        ...blogArticles.map(blog => ({ role: "system", content: `Konu hakkında daha fazla bilgi almak için ${blog.title} makalesini ziyaret edebilirsiniz: ${blog.link}` }))
+    ]);
 
     sessionMessages.push({ role: "assistant", content: aiResponse });
     await saveSessionHistory(sessionId, sessionMessages);
