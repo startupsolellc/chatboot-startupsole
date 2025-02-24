@@ -1,5 +1,3 @@
-// src/components/ChatWidget.js
-
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { MessageCircle } from 'lucide-react';
@@ -126,90 +124,74 @@ const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [sessionId, setSessionId] = useState(localStorage.getItem('sessionId') || null);
+  const [sessionId, setSessionId] = useState(localStorage.getItem('sessionId') || '');
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
   };
 
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      setMessages([{ sender: 'bot', text: 'Merhaba! Size nasıl yardımcı olabilirim?' }]);
-    }
-  }, [isOpen]);
+    const fetchMessages = async () => {
+      if (sessionId) {
+        try {
+          const response = await fetch('https://startupsolechatboot.netlify.app/.netlify/functions/mainChatbotHandler', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'session-id': sessionId },
+            body: JSON.stringify({ userMessage: '', sessionId }),
+          });
+          const data = await response.json();
+          if (Array.isArray(data.message)) {
+            setMessages(data.message);
+          }
+        } catch (error) {
+          console.error('Mesajları Yüklerken Hata:', error);
+        }
+      }
+    };
+    fetchMessages();
+  }, [sessionId]);
 
   const handleSend = async () => {
-    if (input.trim() === '') return;
-
-    const userMessage = { sender: 'user', text: input };
-    setMessages((prevMessages) => [...prevMessages, userMessage, { sender: 'bot', text: 'Yanıt hazırlanıyor...' }]);
+    if (!input.trim()) return;
+    const newMessages = [...messages, { role: 'user', content: input }];
+    setMessages(newMessages);
     setInput('');
-
     try {
       const response = await fetch('https://startupsolechatboot.netlify.app/.netlify/functions/mainChatbotHandler', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'session-id': sessionId || '' },
         body: JSON.stringify({ userMessage: input, sessionId }),
       });
-
       const data = await response.json();
+      if (Array.isArray(data.message)) {
+        setMessages(data.message);
+      }
       if (data.sessionId) {
         setSessionId(data.sessionId);
         localStorage.setItem('sessionId', data.sessionId);
       }
-
-      setMessages((prevMessages) => [
-        ...prevMessages.slice(0, prevMessages.length - 1),
-        { sender: 'bot', text: data.message || 'Maalesef şu anda yanıt veremiyorum.' }
-      ]);
     } catch (error) {
-      console.error('Sunucu Hatası:', error);
-      setMessages((prevMessages) => [
-        ...prevMessages.slice(0, prevMessages.length - 1),
-        { sender: 'bot', text: 'Maalesef şu anda yanıt veremiyorum.' }
-      ]);
+      console.error('Mesaj Gönderme Hatası:', error);
     }
   };
 
   return (
     <GlobalStyle>
       <ChatContainer>
-        {!isOpen && (
-          <ChatButton onClick={toggleChat} aria-label="Sohbeti Aç">
-            <MessageCircle size={24} />
-          </ChatButton>
-        )}
-
+        {!isOpen && <ChatButton onClick={toggleChat} aria-label="Sohbeti Aç"><MessageCircle size={24} /></ChatButton>}
         {isOpen && (
           <ChatBox>
-            <Header>
-              Startupsole Asistan
-              <button onClick={toggleChat} aria-label="Sohbeti Kapat">
-                <CloseIcon />
-              </button>
-            </Header>
-
+            <Header>Startupsole Asistan<button onClick={toggleChat} aria-label="Sohbeti Kapat"><CloseIcon /></button></Header>
             <MessagesContainer>
-                {messages.map((msg, index) => (
-                    <Message key={index} isUser={msg.sender === 'user'}>
-                        {msg.sender === 'bot' ? parse(msg.text) : msg.text}
+              {messages.map((msg, index) => (
+                <Message key={index} isUser={msg.role === 'user'}>
+                  {msg.content}
                 </Message>
-                 ))}
+              ))}
             </MessagesContainer>
-
             <InputContainer>
-              <Input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSend();
-                }}
-                placeholder="Mesajınızı yazın..."
-              />
-              <SendButton onClick={handleSend}>
-                <SendIcon />
-              </SendButton>
+              <Input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Mesajınızı yazın..." />
+              <SendButton onClick={handleSend}><SendIcon /></SendButton>
             </InputContainer>
           </ChatBox>
         )}
