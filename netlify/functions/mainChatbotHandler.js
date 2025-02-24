@@ -59,7 +59,7 @@ async function getOpenAIResponse(messages, maxTokens = 600) {
 
 exports.handler = async (event, context) => {
   try {
-    let userMessage = "Merhaba, nasıl yardımcı olabilirim?";
+    let userMessage = "";
     let sessionId = event.headers['session-id'] || uuidv4();
 
     if (event.httpMethod === "POST" && event.body) {
@@ -115,7 +115,7 @@ exports.handler = async (event, context) => {
             "Content-Type": "application/json; charset=utf-8",
             "session-id": sessionId
         },
-        body: JSON.stringify({ message: aiResponse, sessionId }),
+        body: JSON.stringify({ message: sessionMessages, sessionId }),
     };
 
   } catch (error) {
