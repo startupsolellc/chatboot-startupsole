@@ -6,7 +6,8 @@ const {
   getDocs,
   doc,
   getDoc,
-  setDoc
+  setDoc,
+  updateDoc
 } = require("firebase/firestore/lite");
 const { v4: uuidv4 } = require('uuid');
 
@@ -28,7 +29,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
-// ========== Oturum Geçmişini Getirme ==========
+// ========== 1. Oturum Geçmişini Getirme ==========
 async function getSessionHistory(sessionId) {
   const sessionDoc = doc(db, "sessions", sessionId);
   const sessionSnapshot = await getDoc(sessionDoc);
@@ -43,29 +44,97 @@ async function getSessionHistory(sessionId) {
   return [];
 }
 
-// ========== Oturum Geçmişini Kaydetme ==========
+// ========== 2. Oturum Geçmişini Kaydetme ==========
 async function saveSessionHistory(sessionId, messages) {
   const sessionDoc = doc(db, "sessions", sessionId);
   await setDoc(sessionDoc, { messages });
   console.log("💾 Oturum Güncellendi:", sessionId);
 }
 
-// ========== OpenAI'den Yanıt Alma ==========
-async function getOpenAIResponse(messages, maxTokens = 200) {
-  // temperature'ı 0.1'e çekerek halüsinasyonları azaltıyoruz
-  // max_tokens'ı da 200'e kısarak çok uzun cevaplara sınır getiriyoruz
+// ========== 3. Metni Embedding'e Çevirme ==========
+async function getEmbedding(text) {
+  // OpenAI Embedding endpoint
+  const embeddingResponse = await openai.embeddings.create({
+    model: "text-embedding-ada-002", // En popüler embedding modeli
+    input: text
+  });
+  const embedding = embeddingResponse.data.data[0].embedding;
+  return embedding;
+}
+
+// ========== 4. Belgedeki Embedding'i Al veya Hesapla ==========
+async function getOrComputeEmbedding(blogDoc) {
+  // blogDoc: Firestore'dan aldığımız döküman (title, content, embedding vs.)
+  let data = blogDoc.data();
+  // Embedding alanı var mı, yok mu bak
+  if (!data.embedding) {
+    // Belge içeriğinden (veya excerpt) embedding oluştur
+    const textToEmbed = data.excerpt || data.title || "";
+    if (!textToEmbed) {
+      return null; // Boş metin varsa embedding hesaplamıyoruz
+    }
+    const computedEmbedding = await getEmbedding(textToEmbed);
+    // Firestore'da bu embedding'i saklayalım
+    const ref = doc(db, "blog_articles", blogDoc.id);
+    await updateDoc(ref, { embedding: computedEmbedding });
+    console.log(`✅ Embedding oluşturuldu ve kaydedildi: ${blogDoc.id}`);
+    return computedEmbedding;
+  } else {
+    return data.embedding;
+  }
+}
+
+// ========== 5. Vektörel Benzerlik (Cosine Similarity) ==========
+function cosineSimilarity(vecA, vecB) {
+  let dotProduct = 0.0;
+  let normA = 0.0;
+  let normB = 0.0;
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  normA = Math.sqrt(normA);
+  normB = Math.sqrt(normB);
+  return dotProduct / (normA * normB);
+}
+
+// ========== 6. En Benzer Doküman(lar)ı Bulma ==========
+function findTopDocuments(userEmbedding, allDocs, topK = 2, threshold = 0.75) {
+  // allDocs: { id, data, embedding } formatında doküman listesi
+  // userEmbedding: kullanıcı sorgusunun embedding'i
+  // topK: en benzer kaç dokümanı döndüreceğiz
+  // threshold: asgari benzerlik eşiği
+
+  // Her dokümanın benzerliğini hesapla
+  const scoredDocs = allDocs.map(d => {
+    const sim = cosineSimilarity(userEmbedding, d.embedding);
+    return { ...d, similarity: sim };
+  });
+
+  // Benzerliğe göre sırala
+  scoredDocs.sort((a, b) => b.similarity - a.similarity);
+
+  // En yüksek benzerlikteki topK dokümanları al
+  const topDocs = scoredDocs.slice(0, topK).filter(doc => doc.similarity >= threshold);
+
+  return topDocs;
+}
+
+// ========== 7. OpenAI'den Yanıt Alma ==========
+async function getOpenAIResponse(messages, maxTokens = 400) {
+  // "gpt-4o-mini" modelini kullanıyoruz
   const response = await openai.chat.completions.create({
-    // Burada modeli gpt-4o-mini'ye güncelledik.
     model: "gpt-4o-mini",
     messages: messages,
     max_tokens: maxTokens,
-    temperature: 0.1
+    temperature: 0.4 // Birazcık yaratıcılığı açık bırakıyoruz
   });
 
   return response?.choices?.[0]?.message?.content || "Yanıt alınamadı.";
 }
 
-// ========== Lambda Handler ==========
+// ========== 8. Lambda Handler ==========
 exports.handler = async (event, context) => {
   try {
     let userMessage = "";
@@ -81,27 +150,7 @@ exports.handler = async (event, context) => {
     console.log("📥 Kullanıcı Mesajı:", userMessage);
     console.log("🆔 Oturum ID:", sessionId);
 
-    // ========== Firestore'dan FAQ ve Blog verilerini çekme ==========
-    const faqCollection = collection(db, "faqs");
-    const blogCollection = collection(db, "blog_articles");
-
-    const [faqSnapshot, blogSnapshot] = await Promise.all([
-      getDocs(faqCollection),
-      getDocs(blogCollection)
-    ]);
-
-    const faqs = faqSnapshot.docs.map((doc) => ({
-      question: doc.data().question,
-      answer: doc.data().answer
-    }));
-
-    const blogArticles = blogSnapshot.docs.map((doc) => ({
-      title: doc.data().title,
-      excerpt: doc.data().excerpt?.slice(0, 200),
-      link: doc.data().link
-    }));
-
-    // ========== Oturum geçmişini al ==========
+    // Oturum geçmişini al
     const sessionMessages = await getSessionHistory(sessionId);
 
     // Kullanıcı mesajını ekle
@@ -109,38 +158,75 @@ exports.handler = async (event, context) => {
       sessionMessages.push({ role: "user", content: userMessage });
     }
 
-    // ========== System Prompt (Katı Talimatlar) ==========
-    // Burada modelden veritabanında olmayan konular için "verimiz yok" demesini
-    // ve kesinlikle bilgi uydurmamasını istiyoruz.
-    const faqsText = faqs.map((f, i) => `(${i+1}) Soru: ${f.question} | Cevap: ${f.answer.slice(0,50)}...`).join("\n");
-    const blogsText = blogArticles.map((b, i) => `(${i+1}) ${b.title}: ${b.link}`).join("\n");
+    // 8.1) Firestore'dan blog makalelerini çek
+    // SSS'lerin de embedding'leri varsa aynı mantıkla kullanabilirsiniz
+    const blogCollection = collection(db, "blog_articles");
+    const blogSnapshot = await getDocs(blogCollection);
 
+    // 8.2) Kullanıcı sorgusunun embedding'ini al
+    const userEmbedding = await getEmbedding(userMessage);
+
+    // 8.3) Blog dökümanlarının embedding'lerini toplayalım
+    let allBlogDocs = [];
+    for (let docSnap of blogSnapshot.docs) {
+      const embedding = await getOrComputeEmbedding(docSnap); 
+      if (embedding) {
+        // excerpt, title, link gibi alanları da saklayalım
+        allBlogDocs.push({
+          id: docSnap.id,
+          data: docSnap.data(),
+          embedding: embedding
+        });
+      }
+    }
+
+    // 8.4) En alakalı 2 dokümanı bulalım
+    const topDocs = findTopDocuments(userEmbedding, allBlogDocs, 2, 0.7);
+    console.log("En alakalı dokümanlar:", topDocs.map(d => d.id));
+
+    // 8.5) Bu dokümanları system prompt'a koymak için metin hazırlayalım
+    // En alakalı dokümanların excerpt veya kısa özetini modele veriyoruz
+    let knowledgeBaseText = "";
+    topDocs.forEach((docObj, index) => {
+      const { title, excerpt, link } = docObj.data;
+      // excerpt yeterince kısa değilse kesebilirsiniz
+      knowledgeBaseText += `
+      [${index + 1}]
+      Başlık: ${title}
+      Özet: ${excerpt}
+      Link: ${link}
+      `;
+    });
+
+    // Eğer hiçbir doküman threshold'ü geçmezse, "içerik bulamadık" benzeri
+    if (topDocs.length === 0) {
+      knowledgeBaseText = `
+      Bu kullanıcının sorusuna dair veritabanımda yeterince ilgili bir makale bulamadım.
+      `;
+    }
+
+    // 8.6) System Prompt oluştur
     const systemPrompt = `
-Sen bir sohbet robotusun. Aşağıda Sıkça Sorulan Sorular (FAQ) ve blog makalelerine ait özet/başlıklar bulunuyor.
-Kullanıcının sorduğu soruya sadece bu listede bulunan bilgilerden yararlanarak kısa ve net cevap ver.
-Eğer kullanıcı, bu listede olmayan veya veritabanında bulunmayan bir konu hakkında soru sorarsa,
-"Maalesef bu konuda veritabanımızda bir bilgi yok." diyerek cevap ver ve ek bilgi uydurma.
-Cevabın 2-3 cümleyi geçmeyecek şekilde öz olsun.
+Sen bir destek chatbotusun. Aşağıdaki bilgiler veritabanındaki blog makalelerinden alınmıştır.
+Kullanıcının sorusuna bu bilgiler ışığında, kısa ve öz şekilde yanıt ver. 
+Gerekiyorsa makale linkine yönlendir. Eğer içerik bulamadıysan "veritabanında bu konuyla ilgili bilgi bulunamadı" de.
+Cevabın en fazla 3-4 cümle olsun.
 
-=== SSS Listesi (Özet) ===
-${faqsText}
+=== İlgili Makale Bilgisi ===
+${knowledgeBaseText}
 
-=== Blog Makaleleri (Özet) ===
-${blogsText}
+` .trim();
 
-Cevaplar Türkçe ve anlaşılır biçimde olsun.
-    `.trim();
-
-    // System mesajını en başa koyuyoruz
+    // 8.7) OpenAI mesajlarını oluştur
     const openAIMessages = [
       { role: "system", content: systemPrompt },
       ...sessionMessages
     ];
 
-    // ========== OpenAI'den yanıt al ==========
-    const aiResponse = await getOpenAIResponse(openAIMessages, 200);
+    // 8.8) OpenAI'den yanıt al
+    const aiResponse = await getOpenAIResponse(openAIMessages, 400);
 
-    // Yanıtı sessionMessages'e ekleyip kaydediyoruz
+    // Asistan yanıtını ekle
     if (aiResponse) {
       sessionMessages.push({ role: "assistant", content: aiResponse });
       await saveSessionHistory(sessionId, sessionMessages);
