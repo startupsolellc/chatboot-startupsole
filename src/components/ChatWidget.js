@@ -6,7 +6,6 @@ import { MessageCircle } from 'lucide-react';
 import parse from 'html-react-parser';
 import CloseIcon from '@mui/icons-material/Menu';
 import SendIcon from '@mui/icons-material/Send';
-import { v4 as uuidv4 } from 'uuid';
 
 const primaryColor = '#3F77AE';
 const secondaryColor = '#ffcc00';
@@ -26,6 +25,30 @@ const ChatContainer = styled.div`
   bottom: 20px;
   right: 20px;
   z-index: 1000;
+`;
+
+const ChatButton = styled.button`
+  background-color: ${primaryColor};
+  border: none;
+  border-radius: 50%;
+  padding: 20px;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+
+  &:hover {
+    background-color: ${secondaryColor};
+    transform: scale(1.1);
+  }
+  &:active {
+    transform: scale(0.95);
+  }
 `;
 
 const ChatBox = styled.div`
@@ -103,22 +126,17 @@ const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [sessionId, setSessionId] = useState(localStorage.getItem('sessionId') || uuidv4());
+  const [sessionId, setSessionId] = useState(localStorage.getItem('sessionId') || null);
 
   const toggleChat = () => {
     setIsOpen(!isOpen);
   };
 
   useEffect(() => {
-    const storedSessionId = localStorage.getItem('sessionId');
-    if (storedSessionId) {
-        setSessionId(storedSessionId);
-    } else {
-        const newSessionId = uuidv4();
-        setSessionId(newSessionId);
-        localStorage.setItem('sessionId', newSessionId);
+    if (isOpen && messages.length === 0) {
+      setMessages([{ sender: 'bot', text: 'Merhaba! Size nasıl yardımcı olabilirim?' }]);
     }
-  }, []);
+  }, [isOpen]);
 
   const handleSend = async () => {
     if (input.trim() === '') return;
@@ -130,10 +148,7 @@ const ChatWidget = () => {
     try {
       const response = await fetch('https://startupsolechatboot.netlify.app/.netlify/functions/mainChatbotHandler', {
         method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'session-id': sessionId 
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userMessage: input, sessionId }),
       });
 
@@ -145,7 +160,7 @@ const ChatWidget = () => {
 
       setMessages((prevMessages) => [
         ...prevMessages.slice(0, prevMessages.length - 1),
-        { sender: 'bot', text: data.message?.slice(0, 200) || 'Maalesef şu anda yanıt veremiyorum.' }
+        { sender: 'bot', text: data.message || 'Maalesef şu anda yanıt veremiyorum.' }
       ]);
     } catch (error) {
       console.error('Sunucu Hatası:', error);
@@ -175,11 +190,11 @@ const ChatWidget = () => {
             </Header>
 
             <MessagesContainer>
-              {messages.map((msg, index) => (
-                <Message key={index} isUser={msg.sender === 'user'}>
-                  {msg.sender === 'bot' ? parse(msg.text) : msg.text}
+                {messages.map((msg, index) => (
+                    <Message key={index} isUser={msg.sender === 'user'}>
+                        {msg.sender === 'bot' ? parse(msg.text) : msg.text}
                 </Message>
-              ))}
+                 ))}
             </MessagesContainer>
 
             <InputContainer>
