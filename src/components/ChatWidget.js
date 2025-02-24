@@ -4,7 +4,6 @@ import { MessageCircle } from 'lucide-react';
 import parse from 'html-react-parser';
 import CloseIcon from '@mui/icons-material/Menu';
 import SendIcon from '@mui/icons-material/Send';
-
 const primaryColor = '#3F77AE';
 const secondaryColor = '#ffcc00';
 const darkColor = '#333333';
@@ -12,19 +11,16 @@ const userMessageBackground = '#f1f1f1';
 const botMessageBackground = '#e0f7fa';
 const userTextColor = darkColor;
 const botTextColor = primaryColor;
-
 const GlobalStyle = styled.div`
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 14px;
 `;
-
 const ChatContainer = styled.div`
   position: fixed;
   bottom: 20px;
   right: 20px;
   z-index: 1000;
 `;
-
 const ChatButton = styled.button`
   background-color: ${primaryColor};
   border: none;
@@ -39,7 +35,6 @@ const ChatButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: transform 0.2s;
-
   &:hover {
     background-color: ${secondaryColor};
     transform: scale(1.1);
@@ -48,7 +43,6 @@ const ChatButton = styled.button`
     transform: scale(0.95);
   }
 `;
-
 const ChatBox = styled.div`
   width: 90vw;
   max-width: 400px;
@@ -61,7 +55,6 @@ const ChatBox = styled.div`
   flex-direction: column;
   overflow: hidden;
 `;
-
 const Header = styled.div`
   background-color: ${primaryColor};
   color: white;
@@ -70,14 +63,12 @@ const Header = styled.div`
   justify-content: space-between;
   align-items: center;
 `;
-
 const MessagesContainer = styled.div`
   flex: 1;
   padding: 10px;
   overflow-y: auto;
   background-color: #F4F7FF;
 `;
-
 const Message = styled.div`
   background-color: ${({ isUser }) => (isUser ? userMessageBackground : botMessageBackground)};
   color: ${({ isUser }) => (isUser ? userTextColor : botTextColor)};
@@ -86,19 +77,16 @@ const Message = styled.div`
   margin-bottom: 5px;
   max-width: 70%;
   align-self: ${({ isUser }) => (isUser ? 'flex-end' : 'flex-start')};
-
   a {
     color: ${secondaryColor};
     text-decoration: none;
   }
 `;
-
 const InputContainer = styled.div`
   display: flex;
   padding: 10px;
   border-top: 1px solid #ddd;
 `;
-
 const Input = styled.input`
   flex: 1;
   padding: 8px;
@@ -106,7 +94,6 @@ const Input = styled.input`
   border-radius: 5px;
   margin-right: 10px;
 `;
-
 const SendButton = styled.button`
   background-color: ${primaryColor};
   border: none;
@@ -114,26 +101,50 @@ const SendButton = styled.button`
   padding: 8px 12px;
   color: white;
   cursor: pointer;
-
   &:hover {
     background-color: ${secondaryColor};
   }
 `;
-
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+`;
+const LoadingMessage = styled.div`
+  background-color: ${({ isUser }) => (isUser ? '#f0f0f0' : '#e8e8e8')};
+  padding: 12px;
+  border-radius: 10px;
+  width: ${({ width }) => width || '60%'};
+  height: 20px;
+  animation: pulse 1.5s infinite;
+  align-self: ${({ isUser }) => (isUser ? 'flex-end' : 'flex-start')};
+  @keyframes pulse {
+    0% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 0.4;
+    }
+    100% {
+      opacity: 0.6;
+    }
+  }
+`;
 const ChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sessionId, setSessionId] = useState(localStorage.getItem('sessionId') || '');
-
+  const [isLoading, setIsLoading] = useState(true);
   const toggleChat = () => {
     setIsOpen(!isOpen);
   };
-
   useEffect(() => {
     const fetchMessages = async () => {
       if (sessionId) {
         try {
+          setIsLoading(true);
           const response = await fetch('https://startupsolechatboot.netlify.app/.netlify/functions/mainChatbotHandler', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'session-id': sessionId },
@@ -145,12 +156,15 @@ const ChatWidget = () => {
           }
         } catch (error) {
           console.error('Mesajları Yüklerken Hata:', error);
+        } finally {
+          setIsLoading(false);
         }
+      } else {
+        setIsLoading(false);
       }
     };
     fetchMessages();
   }, [sessionId]);
-
   const handleSend = async () => {
     if (!input.trim()) return;
     const newMessages = [...messages, { role: 'user', content: input }];
@@ -174,7 +188,6 @@ const ChatWidget = () => {
       console.error('Mesaj Gönderme Hatası:', error);
     }
   };
-
   return (
     <GlobalStyle>
       <ChatContainer>
@@ -183,14 +196,28 @@ const ChatWidget = () => {
           <ChatBox>
             <Header>Startupsole Asistan<button onClick={toggleChat} aria-label="Sohbeti Kapat"><CloseIcon /></button></Header>
             <MessagesContainer>
-              {messages.map((msg, index) => (
-                <Message key={index} isUser={msg.role === 'user'}>
-                  {msg.content}
-                </Message>
-              ))}
+              {isLoading ? (
+                <LoadingContainer>
+                  <LoadingMessage width="50%" />
+                  <LoadingMessage isUser width="70%" />
+                  <LoadingMessage width="60%" />
+                  <LoadingMessage isUser width="40%" />
+                </LoadingContainer>
+              ) : (
+                messages.map((msg, index) => (
+                  <Message key={index} isUser={msg.role === 'user'}>
+                    {msg.content}
+                  </Message>
+                ))
+              )}
             </MessagesContainer>
             <InputContainer>
-              <Input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Mesajınızı yazın..." />
+              <Input 
+                type="text" 
+                value={input} 
+                onChange={(e) => setInput(e.target.value)} 
+                placeholder="Mesajınızı yazın..." 
+              />
               <SendButton onClick={handleSend}><SendIcon /></SendButton>
             </InputContainer>
           </ChatBox>
@@ -199,5 +226,4 @@ const ChatWidget = () => {
     </GlobalStyle>
   );
 };
-
 export default ChatWidget;
