@@ -42,7 +42,7 @@ async function getSessionHistory(sessionId) {
 
 async function saveSessionHistory(sessionId, messages) {
     const sessionDoc = doc(db, "sessions", sessionId);
-    await updateDoc(sessionDoc, { messages });
+    await setDoc(sessionDoc, { messages }); // updateDoc yerine setDoc kullanıldı
     console.log("💾 Oturum Güncellendi:", sessionId);
 }
 
@@ -91,7 +91,9 @@ exports.handler = async (event, context) => {
     }));
 
     const sessionMessages = await getSessionHistory(sessionId);
-    sessionMessages.push({ role: "user", content: userMessage });
+    if (userMessage) {
+        sessionMessages.push({ role: "user", content: userMessage });
+    }
 
     const aiResponse = await getOpenAIResponse([
         ...sessionMessages,
@@ -99,8 +101,10 @@ exports.handler = async (event, context) => {
         ...blogArticles.map(blog => ({ role: "system", content: `Konu hakkında daha fazla bilgi almak için ${blog.title} makalesini ziyaret edebilirsiniz: ${blog.link}` }))
     ]);
 
-    sessionMessages.push({ role: "assistant", content: aiResponse });
-    await saveSessionHistory(sessionId, sessionMessages);
+    if (aiResponse) {
+        sessionMessages.push({ role: "assistant", content: aiResponse });
+        await saveSessionHistory(sessionId, sessionMessages);
+    }
 
     console.log("🧠 OpenAI Tam Yanıt:", aiResponse);
     console.log("📜 Mesaj Geçmişi:", sessionMessages);
