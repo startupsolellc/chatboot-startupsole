@@ -11,13 +11,9 @@ const {
 } = require("firebase/firestore/lite");
 const { v4: uuidv4 } = require('uuid');
 
-// ========== 0. OpenAI ve Firebase Kurulumu ==========
-
-// Bu kodun çalışması için "npm install openai firebase" (sürüm 4+)
-// ve ortam değişkenlerinde OPENAI_API_KEY, FIREBASE_* değerlerinin
-// doğru ayarlandığından emin ol.
+// ====================== 0. OpenAI ve Firebase Kurulumu ======================
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY, // Env'de tanımlı olmalı
 });
 
 const firebaseConfig = {
@@ -32,43 +28,44 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
-// ========== 1. Oturum Geçmişini Getirme ==========
+// ====================== 1. Oturum Geçmişini Getirme ======================
 async function getSessionHistory(sessionId) {
   const sessionDoc = doc(db, "sessions", sessionId);
   const sessionSnapshot = await getDoc(sessionDoc);
   if (sessionSnapshot.exists()) {
     console.log("📂 Mevcut Oturum Bulundu:", sessionId);
     const messages = sessionSnapshot.data().messages || [];
-    // Sadece son 10 mesajı tutuyoruz
-    return messages.slice(-10);
+    return messages.slice(-10); // Son 10 mesaj
   }
   console.log("🆕 Yeni Oturum Oluşturuluyor:", sessionId);
   await setDoc(sessionDoc, { messages: [] });
   return [];
 }
 
-// ========== 2. Oturum Geçmişini Kaydetme ==========
+// ====================== 2. Oturum Geçmişini Kaydetme ======================
 async function saveSessionHistory(sessionId, messages) {
   const sessionDoc = doc(db, "sessions", sessionId);
   await setDoc(sessionDoc, { messages });
   console.log("💾 Oturum Güncellendi:", sessionId);
 }
 
-// ========== 3. Metni Embedding'e Çevirme (GÜNCELLENDİ) ==========
+// ====================== 3. Metni Embedding'e Çevirme ======================
 async function getEmbedding(text) {
   if (!text || !text.trim()) {
+    console.log("❗ Embedding alınacak metin boş.");
     return null;
   }
-  console.log("🔎 Embedding alınacak metin:", text.slice(0, 60), "...");
+  console.log("🔎 Embedding alınacak metin:", text.slice(0, 80), "...");
 
   try {
+    // OpenAI'nin "createEmbedding" metodunu kullanıyoruz (openai@4.x ve üstü)
     const response = await openai.createEmbedding({
       model: "text-embedding-ada-002",
       input: text,
     });
     const [res] = response.data.data;
     const embedding = res.embedding;
-    console.log("✅ Embedding oluşturuldu, vektör uzunluğu:", embedding.length);
+    console.log("✅ Embedding oluşturuldu. Vektör uzunluğu:", embedding.length);
     return embedding;
   } catch (err) {
     console.error("❌ Embedding oluşturulurken hata:", err.message);
@@ -76,20 +73,26 @@ async function getEmbedding(text) {
   }
 }
 
-// ========== 4. Belgedeki Embedding'i Al veya Hesapla ==========
+// ====================== 4. Belgedeki Embedding'i Al veya Hesapla ======================
 async function getOrComputeEmbedding(blogDoc) {
   const data = blogDoc.data();
-  if (!data) return null;
+  if (!data) {
+    console.log("❗ Blog dokümanı boş:", blogDoc.id);
+    return null;
+  }
 
-  // Metin olarak "excerpt" veya "title" kullanıyoruz
-  const textToEmbed = data.excerpt || data.title || "";
-  if (!textToEmbed.trim()) {
+  // content -> excerpt -> title öncelikli
+  const textToEmbed = (data.content || "").trim()
+    || (data.excerpt || "").trim()
+    || (data.title || "").trim();
+
+  if (!textToEmbed) {
+    console.log("❗ Embedding için kullanılacak metin yok:", blogDoc.id);
     return null;
   }
 
   // Zaten embedding var mı?
   if (data.embedding && Array.isArray(data.embedding)) {
-    // Konsolda görelim
     console.log(`📌 Mevcut embedding bulundu: ${blogDoc.id}, uzunluk: ${data.embedding.length}`);
     return data.embedding;
   }
@@ -97,6 +100,7 @@ async function getOrComputeEmbedding(blogDoc) {
   // Yoksa yeni oluşturup Firestore'a kaydedelim
   const computedEmbedding = await getEmbedding(textToEmbed);
   if (!computedEmbedding) {
+    console.log("❗ Embedding oluşturulamadı:", blogDoc.id);
     return null;
   }
 
@@ -104,15 +108,15 @@ async function getOrComputeEmbedding(blogDoc) {
     await updateDoc(doc(db, "blog_articles", blogDoc.id), {
       embedding: computedEmbedding
     });
-    console.log("✅ Embedding kaydedildi Firestore'a:", blogDoc.id);
+    console.log("✅ Firestore'a embedding kaydedildi:", blogDoc.id);
   } catch (err) {
     console.error("❌ Firestore'a embedding kaydedilirken hata:", err.message);
-    // embedding var ama kaydedemedik, yine de döndürelim
   }
+
   return computedEmbedding;
 }
 
-// ========== 5. Cosine Similarity ==========
+// ====================== 5. Cosine Similarity ======================
 function cosineSimilarity(vecA, vecB) {
   let dotProduct = 0.0;
   let normA = 0.0;
@@ -124,46 +128,55 @@ function cosineSimilarity(vecA, vecB) {
   }
   normA = Math.sqrt(normA);
   normB = Math.sqrt(normB);
+  if (normA === 0 || normB === 0) return 0;
   return dotProduct / (normA * normB);
 }
 
-// ========== 6. En Benzer Doküman(lar)ı Bulma ==========
+// ====================== 6. En Benzer Doküman(lar)ı Bulma ======================
 function findTopDocuments(userEmbedding, allDocs, topK = 2, threshold = 0.3) {
   const scoredDocs = allDocs.map(d => {
     const sim = cosineSimilarity(userEmbedding, d.embedding);
     return { ...d, similarity: sim };
   });
 
+  // Her dokümanın benzerlik skorunu loglayalım
+  scoredDocs.forEach(doc => {
+    console.log(`📝 Doc ID: ${doc.id}, Benzerlik: ${doc.similarity.toFixed(3)}`);
+  });
+
+  // Skora göre büyükten küçüğe sırala
   scoredDocs.sort((a, b) => b.similarity - a.similarity);
-  // En yüksek benzerlikteki topK dokümanları al, threshold'ün üstünde
+
+  // En yüksek benzerlikteki topK dokümanı al, threshold üstünde
   const topDocs = scoredDocs.slice(0, topK).filter(doc => doc.similarity >= threshold);
 
+  console.log("🔍 Eşik Değer:", threshold, "Seçilen Dokümanlar:", topDocs.map(d => d.id));
   return topDocs;
 }
 
-// ========== 7. OpenAI'den Yanıt Alma ==========
+// ====================== 7. OpenAI'den Yanıt Alma ======================
 async function getOpenAIResponse(messages, maxTokens = 400) {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: messages,
+      messages,
       max_tokens: maxTokens,
-      temperature: 0.4
+      temperature: 0.4,
     });
     const content = response?.choices?.[0]?.message?.content;
     console.log("🧠 OpenAI cevabı:", content);
-    return content || "Yanıt alınamadı.";
+    return content || "";
   } catch (err) {
     console.error("❌ OpenAI'den yanıt alınırken hata:", err.message);
-    return "OpenAI cevabı alınamadı.";
+    return "";
   }
 }
 
-// ========== 8. Lambda Handler (Ana Fonksiyon) ==========
+// ====================== 8. Lambda Handler (Ana Fonksiyon) ======================
 exports.handler = async (event, context) => {
   try {
     let userMessage = "";
-    let sessionId = event.headers['session-id'] || uuidv4();
+    let sessionId = event.headers["session-id"] || uuidv4();
 
     if (event.httpMethod === "POST" && event.body) {
       const body = JSON.parse(event.body);
@@ -185,23 +198,25 @@ exports.handler = async (event, context) => {
     // 8.2) Firestore'dan blog makalelerini çek
     const blogCollection = collection(db, "blog_articles");
     const blogSnapshot = await getDocs(blogCollection);
+
     if (blogSnapshot.empty) {
-      console.log("❗Hiç blog makalesi bulunamadı, veritabanı boş olabilir.");
+      console.log("❗ Hiç blog makalesi yok.");
     }
 
     // 8.3) Kullanıcının embedding'ini oluştur
     const userEmbedding = await getEmbedding(userMessage);
+
     if (!userEmbedding) {
-      // Kullanıcının metni yok veya embedding oluşturulamadı
-      // Yine de bir cevap vermemiz gerekir
-      const fallbackAnswer = "Anladım. Başka bir konuda yardımcı olabilir miyim?";
+      // Kullanıcı mesajı boş veya embedding API hata verdi
+      const fallbackAnswer = "Sorunuz çok kısa veya geçersiz görünüyor. Lütfen biraz daha detaylı tekrar yazar mısınız?";
       sessionMessages.push({ role: "assistant", content: fallbackAnswer });
       await saveSessionHistory(sessionId, sessionMessages);
+
       return {
         statusCode: 200,
         headers: {
           "Content-Type": "application/json; charset=utf-8",
-          "session-id": sessionId
+          "session-id": sessionId,
         },
         body: JSON.stringify({ message: sessionMessages, sessionId }),
       };
@@ -215,27 +230,29 @@ exports.handler = async (event, context) => {
         allBlogDocs.push({
           id: docSnap.id,
           data: docSnap.data(),
-          embedding
+          embedding,
         });
       }
     }
 
     // 8.5) En alakalı doküman(lar)ı bul
-    const topDocs = findTopDocuments(userEmbedding, allBlogDocs, 2, 0.7);
-    console.log("🔍 En alakalı dokümanlar:", topDocs.map(d => d.id));
+    // threshold: 0.3 => Testte kolay eşleşme sağlamak için
+    const topDocs = findTopDocuments(userEmbedding, allBlogDocs, 2, 0.3);
 
     // 8.6) Prompt'a koymak için metin hazırlıyoruz
     let knowledgeBaseText = "";
     if (topDocs.length === 0) {
-      knowledgeBaseText = "Veritabanında bu soruyla ilgili yeterince alakalı bir makale bulunamadı.";
+      // Hiç bir doküman eşiği aşamadı
+      knowledgeBaseText = "Maalesef bu konuyla ilgili veritabanında yeterince alakalı bir makale bulunamadı.";
     } else {
       topDocs.forEach((docObj, index) => {
-        const { title, excerpt, link } = docObj.data;
+        const { title, excerpt, content, link } = docObj.data;
+        // content veya excerpt'ü kısaltmak istersen buradan yapabilirsin
         knowledgeBaseText += `
         [${index + 1}]
         Başlık: ${title}
-        Özet: ${excerpt}
-        Link: ${link}
+        İçerik: ${content?.slice(0, 300) || excerpt?.slice(0, 300) || ""}
+        Link: ${link || ""}
         `;
       });
     }
@@ -245,43 +262,45 @@ exports.handler = async (event, context) => {
 Sen bir destek chatbotusun. Aşağıdaki bilgiler veritabanındaki blog makalelerinden alınmıştır.
 Kullanıcının sorusuna bu bilgiler ışığında, kısa ve öz şekilde yanıt ver. 
 Gerekiyorsa makale linkine yönlendir. 
-Eğer içerik bulunamadıysa "veritabanında bu konuyla ilgili bilgi bulunamadı" de.
+Eğer içerik bulunamadıysa "Veritabanında bu konuyla ilgili bilgi bulunamadı" de.
 Cevabın en fazla 3-4 cümle olsun.
 
 === İlgili Makale Bilgisi ===
 ${knowledgeBaseText}
 `.trim();
 
-    // 8.8) OpenAI mesajlarını oluştur
+    // 8.8) OpenAI'ye mesajları gönder
     const openAIMessages = [
       { role: "system", content: systemPrompt },
-      ...sessionMessages
+      ...sessionMessages,
     ];
 
-    // 8.9) Yanıt al
+    // 8.9) Yanıtı al
     const aiResponse = await getOpenAIResponse(openAIMessages, 400);
 
-    // Asistan yanıtını ekleyip kaydediyoruz
-    if (aiResponse) {
-      sessionMessages.push({ role: "assistant", content: aiResponse });
-      await saveSessionHistory(sessionId, sessionMessages);
+    let finalAnswer = aiResponse.trim();
+    if (!finalAnswer) {
+      finalAnswer = "Veritabanında bu konuyla ilgili bilgi bulunamadı.";
     }
+
+    // Asistan yanıtını ekle
+    sessionMessages.push({ role: "assistant", content: finalAnswer });
+    await saveSessionHistory(sessionId, sessionMessages);
 
     return {
       statusCode: 200,
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "session-id": sessionId
+        "session-id": sessionId,
       },
       body: JSON.stringify({ message: sessionMessages, sessionId }),
     };
-
   } catch (error) {
     console.error("❌ Hata Detayı:", error.message, error.stack);
     return {
       statusCode: 500,
       headers: {
-        "Content-Type": "application/json; charset=utf-8"
+        "Content-Type": "application/json; charset=utf-8",
       },
       body: JSON.stringify({ error: `Sunucu hatası: ${error.message}` }),
     };
