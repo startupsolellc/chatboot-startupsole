@@ -128,7 +128,7 @@ function cosineSimilarity(vecA, vecB) {
 }
 
 // ========== 6. En Benzer Doküman(lar)ı Bulma ==========
-function findTopDocuments(userEmbedding, allDocs, topK = 2, threshold = 0.7) {
+function findTopDocuments(userEmbedding, allDocs, topK = 2, threshold = 0.3) {
   const scoredDocs = allDocs.map(d => {
     const sim = cosineSimilarity(userEmbedding, d.embedding);
     return { ...d, similarity: sim };
