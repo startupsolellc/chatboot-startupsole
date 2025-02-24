@@ -13,7 +13,7 @@ const { v4: uuidv4 } = require('uuid');
 
 // ====================== 0. OpenAI ve Firebase Kurulumu ======================
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // Env'de tanımlı olmalı
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 const firebaseConfig = {
@@ -49,26 +49,42 @@ async function saveSessionHistory(sessionId, messages) {
   console.log("💾 Oturum Güncellendi:", sessionId);
 }
 
-// ====================== 3. Metni Embedding'e Çevirme ======================
+// ====================== 3. Metni Embedding'e Çevirme (Detaylı Log) ======================
 async function getEmbedding(text) {
+  // 3.1) Boşluk kontrolü
   if (!text || !text.trim()) {
-    console.log("❗ Embedding alınacak metin boş.");
+    console.log("❗ getEmbedding: Metin boş. text=", text);
     return null;
   }
-  console.log("🔎 Embedding alınacak metin:", text.slice(0, 80), "...");
+
+  console.log("🔎 getEmbedding: Metin şu şekilde:", text.slice(0, 100), "...");
 
   try {
-    // OpenAI'nin "createEmbedding" metodunu kullanıyoruz (openai@4.x ve üstü)
+    // 3.2) openai.createEmbedding çağrısı
+    console.log("🚀 getEmbedding: createEmbedding çağrılıyor...");
     const response = await openai.createEmbedding({
       model: "text-embedding-ada-002",
-      input: text,
+      input: text
     });
+    console.log("🚀 getEmbedding: createEmbedding yanıtı alındı.");
+
+    // 3.3) Yanıt formatı kontrolü
+    if (!response || !response.data || !Array.isArray(response.data.data) || response.data.data.length === 0) {
+      console.log("❗ getEmbedding: Embedding yanıtı beklenen formatta değil.");
+      return null;
+    }
+
     const [res] = response.data.data;
+    if (!res || !res.embedding) {
+      console.log("❗ getEmbedding: Embedding alanı yok.");
+      return null;
+    }
+
     const embedding = res.embedding;
-    console.log("✅ Embedding oluşturuldu. Vektör uzunluğu:", embedding.length);
+    console.log("✅ getEmbedding: Embedding oluşturuldu, uzunluk:", embedding.length);
     return embedding;
   } catch (err) {
-    console.error("❌ Embedding oluşturulurken hata:", err.message);
+    console.error("❌ getEmbedding: createEmbedding Hatası:", err.message);
     return null;
   }
 }
@@ -87,30 +103,32 @@ async function getOrComputeEmbedding(blogDoc) {
     || (data.title || "").trim();
 
   if (!textToEmbed) {
-    console.log("❗ Embedding için kullanılacak metin yok:", blogDoc.id);
+    console.log("❗ getOrComputeEmbedding: Embedding için metin yok:", blogDoc.id);
     return null;
   }
 
-  // Zaten embedding var mı?
+  // Eğer zaten embedding kaydetmişsek
   if (data.embedding && Array.isArray(data.embedding)) {
-    console.log(`📌 Mevcut embedding bulundu: ${blogDoc.id}, uzunluk: ${data.embedding.length}`);
+    console.log(`📌 Zaten embedding var: ${blogDoc.id}, uzunluk: ${data.embedding.length}`);
     return data.embedding;
   }
 
-  // Yoksa yeni oluşturup Firestore'a kaydedelim
+  // Yoksa yeni oluştur
+  console.log("🚀 getOrComputeEmbedding: Embedding hesaplanıyor:", blogDoc.id);
   const computedEmbedding = await getEmbedding(textToEmbed);
   if (!computedEmbedding) {
-    console.log("❗ Embedding oluşturulamadı:", blogDoc.id);
+    console.log("❗ getOrComputeEmbedding: Embedding hesaplanamadı:", blogDoc.id);
     return null;
   }
 
+  // Firestore'a yazma
   try {
     await updateDoc(doc(db, "blog_articles", blogDoc.id), {
       embedding: computedEmbedding
     });
-    console.log("✅ Firestore'a embedding kaydedildi:", blogDoc.id);
+    console.log("✅ getOrComputeEmbedding: Embedding Firestore'a kaydedildi:", blogDoc.id);
   } catch (err) {
-    console.error("❌ Firestore'a embedding kaydedilirken hata:", err.message);
+    console.error("❌ getOrComputeEmbedding: Firestore update hatası:", err.message);
   }
 
   return computedEmbedding;
@@ -175,6 +193,8 @@ async function getOpenAIResponse(messages, maxTokens = 400) {
 // ====================== 8. Lambda Handler (Ana Fonksiyon) ======================
 exports.handler = async (event, context) => {
   try {
+    console.log("==== HANDLER BAŞLADI ====");
+
     let userMessage = "";
     let sessionId = event.headers["session-id"] || uuidv4();
 
@@ -184,8 +204,9 @@ exports.handler = async (event, context) => {
       sessionId = body.sessionId || sessionId;
     }
 
-    console.log("📥 Kullanıcı Mesajı:", userMessage);
+    console.log("📥 Gelen Kullanıcı Mesajı:", userMessage);
     console.log("🆔 Oturum ID:", sessionId);
+    console.log("OPENAI_API_KEY (gizli kontrol) uzunluğu:", process.env.OPENAI_API_KEY?.length || 0);
 
     // 8.1) Oturum geçmişini al
     const sessionMessages = await getSessionHistory(sessionId);
@@ -200,18 +221,23 @@ exports.handler = async (event, context) => {
     const blogSnapshot = await getDocs(blogCollection);
 
     if (blogSnapshot.empty) {
-      console.log("❗ Hiç blog makalesi yok.");
+      console.log("❗ Hiç blog makalesi yok. Boş veri tabanı.");
+    } else {
+      console.log(`✅ Blog makalesi sayısı: ${blogSnapshot.docs.length}`);
     }
 
     // 8.3) Kullanıcının embedding'ini oluştur
+    console.log("🚀 Kullanıcının embedding'i oluşturulacak:", userMessage);
     const userEmbedding = await getEmbedding(userMessage);
 
     if (!userEmbedding) {
-      // Kullanıcı mesajı boş veya embedding API hata verdi
-      const fallbackAnswer = "Sorunuz çok kısa veya geçersiz görünüyor. Lütfen biraz daha detaylı tekrar yazar mısınız?";
+      // Embedding null döndü
+      console.log("❗ userEmbedding null => Fallback'e gidiyoruz.");
+      const fallbackAnswer = "Sorunuz çok kısa veya geçersiz görünüyor. Lütfen daha fazla detay vererek tekrar yazar mısınız?";
       sessionMessages.push({ role: "assistant", content: fallbackAnswer });
       await saveSessionHistory(sessionId, sessionMessages);
 
+      console.log("==== HANDLER BİTTİ ====");
       return {
         statusCode: 200,
         headers: {
@@ -234,25 +260,23 @@ exports.handler = async (event, context) => {
         });
       }
     }
+    console.log(`✅ Embedding'leri bulunan makale sayısı: ${allBlogDocs.length}`);
 
-    // 8.5) En alakalı doküman(lar)ı bul
-    // threshold: 0.3 => Testte kolay eşleşme sağlamak için
+    // 8.5) En alakalı doküman(lar)ı bul => threshold: 0.3
     const topDocs = findTopDocuments(userEmbedding, allBlogDocs, 2, 0.3);
 
     // 8.6) Prompt'a koymak için metin hazırlıyoruz
     let knowledgeBaseText = "";
     if (topDocs.length === 0) {
-      // Hiç bir doküman eşiği aşamadı
-      knowledgeBaseText = "Maalesef bu konuyla ilgili veritabanında yeterince alakalı bir makale bulunamadı.";
+      knowledgeBaseText = "Maalesef bu konuyla ilgili veritabanımızda yeterince alakalı bir makale bulunamadı.";
     } else {
       topDocs.forEach((docObj, index) => {
         const { title, excerpt, content, link } = docObj.data;
-        // content veya excerpt'ü kısaltmak istersen buradan yapabilirsin
         knowledgeBaseText += `
-        [${index + 1}]
-        Başlık: ${title}
-        İçerik: ${content?.slice(0, 300) || excerpt?.slice(0, 300) || ""}
-        Link: ${link || ""}
+          [${index + 1}]
+          Başlık: ${title}
+          İçerik: ${ (content?.slice(0, 300) || excerpt?.slice(0, 300) || "").replace(/\n/g, " ") }
+          Link: ${link || ""}
         `;
       });
     }
@@ -275,7 +299,7 @@ ${knowledgeBaseText}
       ...sessionMessages,
     ];
 
-    // 8.9) Yanıtı al
+    console.log("🚀 ChatCompletion'e gönderilecek mesajlar:", JSON.stringify(openAIMessages, null, 2));
     const aiResponse = await getOpenAIResponse(openAIMessages, 400);
 
     let finalAnswer = aiResponse.trim();
@@ -287,6 +311,7 @@ ${knowledgeBaseText}
     sessionMessages.push({ role: "assistant", content: finalAnswer });
     await saveSessionHistory(sessionId, sessionMessages);
 
+    console.log("==== HANDLER BİTTİ ====");
     return {
       statusCode: 200,
       headers: {
@@ -296,7 +321,7 @@ ${knowledgeBaseText}
       body: JSON.stringify({ message: sessionMessages, sessionId }),
     };
   } catch (error) {
-    console.error("❌ Hata Detayı:", error.message, error.stack);
+    console.error("❌ Handler'ın dış catch bloğunda hata:", error.message, error.stack);
     return {
       statusCode: 500,
       headers: {
