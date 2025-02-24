@@ -10,12 +10,12 @@ const {
 } = require("firebase/firestore/lite");
 const { v4: uuidv4 } = require('uuid');
 
-// OpenAI kurulumu
+// ========== OpenAI Kurulumu ==========
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Firebase kurulumu
+// ========== Firebase Kurulumu ==========
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
   authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -28,6 +28,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
 
+// ========== Oturum Geçmişini Getirme ==========
 async function getSessionHistory(sessionId) {
   const sessionDoc = doc(db, "sessions", sessionId);
   const sessionSnapshot = await getDoc(sessionDoc);
@@ -42,29 +43,35 @@ async function getSessionHistory(sessionId) {
   return [];
 }
 
+// ========== Oturum Geçmişini Kaydetme ==========
 async function saveSessionHistory(sessionId, messages) {
   const sessionDoc = doc(db, "sessions", sessionId);
   await setDoc(sessionDoc, { messages });
   console.log("💾 Oturum Güncellendi:", sessionId);
 }
 
-async function getOpenAIResponse(messages, maxTokens = 300) {
-  // temperature'ı biraz düşürüyoruz, max_tokens'ı da kısıyoruz
+// ========== OpenAI'den Yanıt Alma ==========
+async function getOpenAIResponse(messages, maxTokens = 200) {
+  // temperature'ı 0.1'e çekerek halüsinasyonları azaltıyoruz
+  // max_tokens'ı da 200'e kısarak çok uzun cevaplara sınır getiriyoruz
   const response = await openai.chat.completions.create({
-    model: "gpt-3.5-turbo", 
+    // Burada modeli gpt-4o-mini'ye güncelledik.
+    model: "gpt-4o-mini",
     messages: messages,
     max_tokens: maxTokens,
-    temperature: 0.4
+    temperature: 0.1
   });
 
   return response?.choices?.[0]?.message?.content || "Yanıt alınamadı.";
 }
 
+// ========== Lambda Handler ==========
 exports.handler = async (event, context) => {
   try {
     let userMessage = "";
     let sessionId = event.headers['session-id'] || uuidv4();
 
+    // Eğer POST isteğiyse, body içinden verileri alıyoruz
     if (event.httpMethod === "POST" && event.body) {
       const body = JSON.parse(event.body);
       userMessage = body.userMessage || userMessage;
@@ -74,7 +81,7 @@ exports.handler = async (event, context) => {
     console.log("📥 Kullanıcı Mesajı:", userMessage);
     console.log("🆔 Oturum ID:", sessionId);
 
-    // Veri tabanından FAQ ve Blog makalelerini çek
+    // ========== Firestore'dan FAQ ve Blog verilerini çekme ==========
     const faqCollection = collection(db, "faqs");
     const blogCollection = collection(db, "blog_articles");
 
@@ -94,7 +101,7 @@ exports.handler = async (event, context) => {
       link: doc.data().link
     }));
 
-    // Oturum geçmişini al
+    // ========== Oturum geçmişini al ==========
     const sessionMessages = await getSessionHistory(sessionId);
 
     // Kullanıcı mesajını ekle
@@ -102,18 +109,18 @@ exports.handler = async (event, context) => {
       sessionMessages.push({ role: "user", content: userMessage });
     }
 
-    // ----- Kısa ve net cevap için System Prompt oluşturun -----
-    // Tüm FAQ ve blog başlıklarını tek tek system mesajı olarak eklemek yerine
-    // birleştirerek veya özetleyerek ekleyebilirsiniz.
-    
+    // ========== System Prompt (Katı Talimatlar) ==========
+    // Burada modelden veritabanında olmayan konular için "verimiz yok" demesini
+    // ve kesinlikle bilgi uydurmamasını istiyoruz.
     const faqsText = faqs.map((f, i) => `(${i+1}) Soru: ${f.question} | Cevap: ${f.answer.slice(0,50)}...`).join("\n");
     const blogsText = blogArticles.map((b, i) => `(${i+1}) ${b.title}: ${b.link}`).join("\n");
 
     const systemPrompt = `
 Sen bir sohbet robotusun. Aşağıda Sıkça Sorulan Sorular (FAQ) ve blog makalelerine ait özet/başlıklar bulunuyor.
-Kullanıcının sorduğu soruya kısa ve net cevap ver. 
-Gerekirse ilgili blog makalesine kısaca yönlendir (sadece en alakalı makalenin bağlantısını ver).
-Gereksiz uzun açıklamalardan kaçın, cevabı 2-3 cümleyi geçmeyecek şekilde tut.
+Kullanıcının sorduğu soruya sadece bu listede bulunan bilgilerden yararlanarak kısa ve net cevap ver.
+Eğer kullanıcı, bu listede olmayan veya veritabanında bulunmayan bir konu hakkında soru sorarsa,
+"Maalesef bu konuda veritabanımızda bir bilgi yok." diyerek cevap ver ve ek bilgi uydurma.
+Cevabın 2-3 cümleyi geçmeyecek şekilde öz olsun.
 
 === SSS Listesi (Özet) ===
 ${faqsText}
@@ -121,17 +128,17 @@ ${faqsText}
 === Blog Makaleleri (Özet) ===
 ${blogsText}
 
-Cevaplar daima Türkçe olsun ve mümkün olduğu kadar anlaşılır, öz biçimde yanıt ver.
+Cevaplar Türkçe ve anlaşılır biçimde olsun.
     `.trim();
 
-    // System prompt'u en başa ekleyin (modelin bağlamı olsun)
+    // System mesajını en başa koyuyoruz
     const openAIMessages = [
       { role: "system", content: systemPrompt },
       ...sessionMessages
     ];
 
-    // OpenAI'den yanıt al
-    const aiResponse = await getOpenAIResponse(openAIMessages, 300);
+    // ========== OpenAI'den yanıt al ==========
+    const aiResponse = await getOpenAIResponse(openAIMessages, 200);
 
     // Yanıtı sessionMessages'e ekleyip kaydediyoruz
     if (aiResponse) {
